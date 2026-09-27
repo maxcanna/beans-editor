@@ -84,4 +84,18 @@ describe('readBackup', () => {
     expect(() => readBackup(bytes)).toThrow(BackupError);
     expect(() => readBackup(bytes)).toThrow(message);
   });
+
+  it('tells files that are not backups apart from damaged backups', () => {
+    const notBackup = (bytes: Uint8Array) => {
+      try {
+        readBackup(bytes);
+      } catch (error) {
+        return error instanceof BackupError && error.notBackup;
+      }
+      return undefined;
+    };
+    expect(notBackup(strToU8('hello'))).toBe(true);
+    expect(notBackup(zipSync({ 'x.json': strToU8('{}') }))).toBe(true);
+    expect(notBackup(zipSync({ 'Beanconqueror.json': strToU8('{') }))).toBe(false);
+  });
 });
