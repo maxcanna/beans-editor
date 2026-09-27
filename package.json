@@ -8,14 +8,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "npm run i18n && svelte-check --tsconfig ./tsconfig.app.json --fail-on-warnings && tsc -p tsconfig.node.json && tsc -p tsconfig.e2e.json",
+    "check": "yarn i18n && svelte-check --tsconfig ./tsconfig.app.json --fail-on-warnings && tsc -p tsconfig.node.json && tsc -p tsconfig.e2e.json",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "validate": "npm run check && npm run lint && npm run test && npm run build && npm run size",
+    "validate": "yarn check && yarn lint && yarn test && yarn build && yarn size",
     "size": "node scripts/check-size.mjs",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "yarn build && wrangler deploy"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@inlang/paraglide-js": "^2.25.4",
+    "@internationalized/date": "^3.12.4",
     "@lucide/svelte": "^1.48.0",
     "bits-ui": "^2.19.3",
     "fflate": "^0.8.3",
@@ -55,5 +56,6 @@
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "packageManager": "yarn@4.13.0+sha512.5c20ba010c99815433e5c8453112165e673f1c7948d8d2b267f4b5e52097538658388ebc9f9580656d9b75c5cc996f990f611f99304a2197d4c56d21eea370e7"
 }
