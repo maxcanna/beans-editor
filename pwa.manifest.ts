@@ -18,8 +18,11 @@ export const manifest: Partial<ManifestOptions> = {
     action: '/share-target',
     method: 'POST',
     enctype: 'multipart/form-data',
-    // Some apps share zips as octet-stream; the app checks the contents, not the type.
+    // Backups open in the editor; a shared product page becomes a Beanconqueror bean link.
     params: {
+      title: 'title',
+      text: 'text',
+      url: 'url',
       files: [
         {
           name: 'file',
