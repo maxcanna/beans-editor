@@ -36,13 +36,13 @@ yarn build && yarn preview
 
 ## Deploying
 
-Production is https://beans.massi.dev, a static site on Cloudflare Workers (static assets, see `wrangler.jsonc`). Cloudflare's Git integration (Workers Builds) deploys it:
+Bean Editor is a static site, deployed to Cloudflare Workers as static assets (see `wrangler.jsonc`). Connect the repository with Cloudflare's Git integration (Workers Builds):
 
 - **Build command:** `yarn build`
 - **Deploy command:** `yarn wrangler deploy`
 - Pushes to `main` deploy to production; other branches get preview URLs on `workers.dev`.
 
-The custom domain is declared in `wrangler.jsonc`, so Cloudflare creates the DNS record and certificate on the first deploy. This requires `massi.dev` to be a zone on the same Cloudflare account.
+To serve it on your own hostname, add a custom domain in the Cloudflare dashboard (Worker › Settings › Domains & Routes). The repository doesn't name one, so deploys never change it.
 
 ## Contributing
 
