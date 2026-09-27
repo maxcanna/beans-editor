@@ -37,6 +37,10 @@ export function classifySheets(sheets: readonly string[]): FileKind {
   if (has('Green Beans') && has('Bean_Information')) return 'green-template';
   if (has('Beans') && has('Bean_Information')) return 'roasted-template';
   if (has('Brews') && has('Beans')) return 'excel-export';
+  // The export names its sheets in the app's language (Italian: Preparazioni, Caffè, Metodi,
+  // Macinacaffè), so any other workbook with exactly its four sheets is treated as one;
+  // the export reader then checks the bean sheet's structure.
+  if (sheets.length === 4 && !has('Bean_Information')) return 'excel-export';
   return 'unknown';
 }
 

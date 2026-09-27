@@ -1,6 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { columnLetters, parseRef } from './cells';
-import { attributes, encodeXml } from './xml';
+import { attributes, encodeXml, textContent } from './xml';
 
 /** A value to write. Dates are written as Excel serials in the column's date style. */
 export type WriteValue = string | number | boolean | { serial: number } | null | undefined;
@@ -10,6 +10,11 @@ export interface FillOptions {
   sheet: string;
   /** 1-based row where data starts; rows above (headers) are kept untouched. */
   firstRow?: number;
+  /**
+   * Header cells to add to row 1 after the existing ones (e.g. "2. Country"),
+   * styled like the last existing header cell. Headers already present are skipped.
+   */
+  appendHeaders?: readonly string[];
 }
 
 function sheetPath(files: Record<string, Uint8Array>, name: string): string {
@@ -40,6 +45,18 @@ class SharedStrings {
     this.#count = (this.#xml.match(/<si>|<si\/>/g) ?? []).length;
   }
 
+  /** Text of cells whose body is `<v>index</v>` (shared strings) or inline. */
+  valuesAt(bodies: readonly string[]): string[] {
+    const existing = [...this.#xml.matchAll(/<si>([\s\S]*?)<\/si>|<si\/>/g)].map((m) =>
+      textContent(m[1] ?? ''),
+    );
+    return bodies.map((b) => {
+      const idx = /<v>(\d+)<\/v>/.exec(b)?.[1];
+      if (idx !== undefined) return existing[Number(idx)] ?? this.#added[Number(idx) - this.#count] ?? '';
+      return textContent(b);
+    });
+  }
+
   get existed() {
     return this.#count > 0 || this.#added.length > 0;
   }
@@ -65,6 +82,20 @@ class SharedStrings {
       .replace(/(<sst\b[^>]*?\s)uniqueCount="\d+"/, `$1uniqueCount="${total}"`)
       .replace(/(<sst\b[^>]*?\s)count="\d+"/, `$1count="${total}"`);
   }
+}
+
+function appendHeaderCells(row: string, headers: readonly string[], sst: SharedStrings): string {
+  const cells = [...row.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)];
+  const last = cells.at(-1);
+  const lastAttrs = attributes(last?.[1] ?? '');
+  const style = lastAttrs['s'] !== undefined ? ` s="${lastAttrs['s']}"` : '';
+  let col = lastAttrs['r'] ? parseRef(lastAttrs['r']).col : -1;
+  const existing = new Set(sst.valuesAt(cells.map((c) => c[2] ?? '')));
+  const added = headers
+    .filter((h) => !existing.has(h))
+    .map((h) => `<c r="${columnLetters(++col)}1"${style} t="s"><v>${sst.id(h)}</v></c>`)
+    .join('');
+  return row.replace(/\s*\bspans="[^"]*"/, '').replace(/<\/row>$/, `${added}</row>`);
 }
 
 /** Adds the shared string part to the content types and workbook relationships. */
@@ -110,6 +141,9 @@ export function fillSheet(
   if (!dataMatch) throw new Error(`Sheet "${options.sheet}" has no sheetData`);
   const existingRows = [...(dataMatch[1] ?? '').matchAll(/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g)];
 
+  const sst = new SharedStrings(
+    files['xl/sharedStrings.xml'] ? strFromU8(files['xl/sharedStrings.xml']) : undefined,
+  );
   const kept: string[] = [];
   let prototype: string | undefined;
   let prototypeAttrs = '';
@@ -128,9 +162,11 @@ export function fillSheet(
     if (a['r'] && a['s'] !== undefined) styleByColumn.set(parseRef(a['r']).col, a['s']);
   }
 
-  const sst = new SharedStrings(
-    files['xl/sharedStrings.xml'] ? strFromU8(files['xl/sharedStrings.xml']) : undefined,
-  );
+  if (options.appendHeaders?.length) {
+    const i = kept.findIndex((row) => /^<row\b[^>]*\br="1"/.test(row));
+    if (i >= 0) kept[i] = appendHeaderCells(kept[i] ?? '', options.appendHeaders, sst);
+  }
+
   let maxCol = 0;
   const written = rows.map((values, i) => {
     const r = firstRow + i;
