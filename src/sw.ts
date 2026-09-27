@@ -2,6 +2,7 @@
 import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { beanLink, findSharedUrl, nameFromUrl } from './lib/beanlink/bean-link';
 import { putSharedFile, SHARE_TARGET_PATH, SHARED_FILE_PARAM } from './lib/share/inbox';
 
 declare const self: ServiceWorkerGlobalScope;
@@ -21,6 +22,15 @@ async function handleShare(request: Request): Promise<Response> {
         receivedAt: Date.now(),
       });
       return redirect({ [SHARED_FILE_PARAM]: '1' });
+    }
+    const text = (key: string) => {
+      const value = form.get(key);
+      return typeof value === 'string' ? value : undefined;
+    };
+    const page = findSharedUrl(text('url'), text('text'), text('title'));
+    if (page) {
+      // Straight into Beanconqueror's Add Bean screen, which is where the user reviews it.
+      return Response.redirect(beanLink({ name: nameFromUrl(page), url: page.href }), 303);
     }
     return redirect();
   } catch {

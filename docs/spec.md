@@ -1,7 +1,14 @@
 # Bean Editor: spec v1
 
 Repository: `maxcanna/bean-editor` (private). Hosting: Cloudflare (static assets, free tier).
-A backend-free Progressive Web App (PWA) that edits Beanconqueror backups. Everything runs in the browser, and the app works fully offline after the first visit.
+A backend-free Progressive Web App (PWA) that edits Beanconqueror backups and adds beans to Beanconqueror from a roaster's product page. Everything runs in the browser, and the app works fully offline after the first visit (reading a product page needs the network).
+
+## 0. Flows
+
+1. **Share a URL** (Android share sheet → Bean Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Bean Editor UI shows. The backup is never touched.
+2. **Share a zip**: the file's contents are checked; a valid backup opens in the editor, anything else gets a message saying how to export a backup from the app.
+3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download or share it back.
+4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown in the bean form for review. From there it's added to the open backup when one is open, and "Open in Beanconqueror" (the same link as flow 1) is always offered. _(Default pending Massi's confirmation.)_
 
 ## 1. File formats
 
@@ -29,13 +36,14 @@ Rules:
 - **Filters**: text search, show or hide archived, and per-type filters (roaster, bean, method, grinder, date range). The grid also sorts.
 - **Validation**: each field is checked as you type, and a summary of problems is shown before export.
 - **Output**: Download, plus Share through the Web Share API (the Android share sheet: Drive, Quick Share, Gmail, and so on). No cloud API keys.
-- **Later, handled in its own thread**: "paste a roaster URL and fill the bean in" via Jina Reader. It needs the network, so it's disabled offline.
+- **Bean from a URL** (flows 1 and 4): Jina Reader fetches the page (it's the CORS bridge), rules pull out JSON-LD / Shopify product data and labelled lines (country, altitude, process…), and an AI pass fills what's left where one is available without a user API key. It needs the network, so it's disabled offline; flow 1 then falls back to a bean named after the link.
 
 ## 3. Offline, service worker, share target
 
 - Built with vite-plugin-pwa in `injectManifest` mode, with our own service worker.
 - **The whole build is precached**: every JS chunk, CSS, the self-hosted fonts and icons. After the first visit nothing needs the network.
-- **The manifest has a `share_target`** (POST, multipart) for backups only: `.zip`, `application/zip` and `application/x-zip-compressed`. `application/octet-stream` is not accepted, so the app doesn't show up for every unknown file. Links are not shared to the app: the URL autofill is a "Paste link" field in the UI. The service worker catches the POST, stores the file in IndexedDB, and redirects (303) to `/?shared-file=1`. This works offline.
+- **The manifest has a `share_target`** (POST, multipart) for backups (`.zip`, `application/zip`, `application/x-zip-compressed`) and for shared links (`title`, `text`, `url`). `application/octet-stream` is not accepted, so the app doesn't show up for every unknown file. The service worker catches the POST, stores a file in IndexedDB, and redirects (303) to `/?shared-file=1`. This works offline.
+- **Sharing a product page**: the service worker finds the URL in the shared text, builds a bean, and answers with a 303 redirect to `beanconqueror://ADD_USER_BEAN?shareUserBean0=…` (the app's own bean share link: BeanProto, base64, 400-character chunks; no allow-list). Beanconqueror's prefilled Add Bean screen is the review step. Until extraction lands, the bean carries a name taken from the URL and the URL itself. If Android Chrome blocks the redirect without a tap, the fallback is a one-button "Open in Beanconqueror" page.
 - **Opening a shared file**: it goes straight into the editor. Only if unsaved work exists does the app ask: replace, merge, or cancel.
 - **Updates**: a new version waits in the background. An "Update available" banner switches over when tapped, so nothing reloads while you're editing.
 - **An automated Playwright test runs with the network cut**: open a backup, edit it, export it, and share a file into it.
@@ -80,6 +88,7 @@ Rules:
 1. **Scaffold**: repo, CI, Cloudflare deploy, PWA shell with offline use and the share target working end to end with a stub file viewer.
 2. **Formats**: backup reader and writer, with round-trip tests. (Template and export support was built, then removed to keep to the lossless format.)
 3. **Backup editor**: open, edit and save a backup zip: beans, brews, grinders and methods, filters, forms, the guard on deleting referenced records, and saving unsaved work.
-4. **Merge**: add another backup's records into the open one.
-5. **Polish**: empty states, error handling, the translation pass, Lighthouse, and a README.
-6. (Separate thread) URL autofill.
+4. **Share a URL (flow 1)**: bean link encoder, share target for links, service worker redirect; test the redirect on a phone, add the one-button fallback if needed.
+5. **Bean from a URL**: page extraction via Jina + rules (+ AI), used by flow 1's redirect and by flow 4's "Add from link" in the editor.
+6. **Merge**: add another backup's records into the open one.
+7. **Polish**: empty states, error handling, the translation pass, Lighthouse.

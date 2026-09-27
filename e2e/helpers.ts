@@ -76,3 +76,21 @@ export async function sharePost(
     form.submit();
   }, data);
 }
+
+/** Shares text to the app the way Android does: a multipart POST to the share target. */
+export async function shareText(page: Page, fields: Record<string, string>) {
+  await page.evaluate((f) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.enctype = 'multipart/form-data';
+    form.action = '/share-target';
+    for (const [name, value] of Object.entries(f)) {
+      const input = document.createElement('input');
+      input.name = name;
+      input.value = value;
+      form.append(input);
+    }
+    document.body.append(form);
+    form.submit();
+  }, fields);
+}
