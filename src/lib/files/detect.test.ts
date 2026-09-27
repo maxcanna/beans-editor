@@ -26,6 +26,8 @@ describe('classifySheets', () => {
     [['Readme_and_Consistency_Check', 'Beans', 'Bean_Information'], 'roasted-template'],
     [['Readme_and_Consistency_Check', 'Green Beans', 'Bean_Information'], 'green-template'],
     [['Brews', 'Beans', 'Methods', 'Grinders'], 'excel-export'],
+    [['Preparazioni', 'Caffè', 'Metodi', 'Macinacaffè'], 'excel-export'],
+    [['Bezüge', 'Bohnen', 'Brühmethode', 'Mühlen'], 'excel-export'],
     [['Sheet1'], 'unknown'],
   ] as const)('%j → %s', (sheets, kind) => {
     expect(classifySheets(sheets)).toBe(kind);
