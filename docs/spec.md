@@ -5,6 +5,8 @@ A backend-free Progressive Web App (PWA) that creates and edits the files Beanco
 
 ## 1. File formats
 
+**The backup zip comes first.** It's the only format that holds everything Beanconqueror stores, so it's the only one that guarantees no data loss. The editor is built around it. The Excel files are side doors: bean rows come in from a template or an export into a backup, and backup beans go out to a template.
+
 | Format                                                                                           | Read | Write     | Beanconqueror import path                                                 |
 | ------------------------------------------------------------------------------------------------ | ---- | --------- | ------------------------------------------------------------------------- |
 | Backup zip (`Beanconqueror.json` + `Beanconqueror_Brews_N.json`, brews split into chunks of 500) | ✓    | ✓         | Settings › Import                                                         |
@@ -18,7 +20,7 @@ Rules:
 - **The zip round-trips losslessly.** Fields and top-level keys the app doesn't understand (e.g. `SETTINGS`, `VERSION`, future fields) are kept untouched and written back as they were.
 - **Brews are re-chunked at 500 on write.** The file names and layout match what the app produces.
 - **Templates are written by filling a bundled copy of the official template.** The Readme sheet, the `Bean_Information` enum sheet and the dropdown lists all survive. The bundled copies are trimmed (the 22,000 empty formatted rows removed; about 30 KB total).
-- **The Excel export's bean columns differ from the template** (it has an extra "Roast type" column, "Creation date" and "Bean Id"). Before the first release, I'll check how the importer maps them using the Beanconqueror source code and a real import.
+- **The Excel export is lossy and localized.** Its sheet names and headers follow the app's language, enums are labels, dates are strings in the user's date format, and its header row is shifted against the data. It's read by column position, and custom roast names never survive it (the app always writes `-`).
 - **Enums come from `Bean_Information`**: roasting type, roast degree (14 values), blend, freezing storage. Invalid values are flagged, never silently dropped.
 
 ## 2. Features
@@ -83,7 +85,7 @@ Rules:
 
 1. **Scaffold**: repo, CI, Cloudflare deploy, PWA shell with offline use and the share target working end to end with a stub file viewer.
 2. **Formats**: parsers and writers for all four formats, with round-trip tests.
-3. **Editor**: cards and grid, filters, forms, the guard on deleting referenced records, and saving unsaved work.
-4. **Convert and merge**, plus the export validation summary.
+3. **Backup editor**: open, edit and save a backup zip: cards and grid, filters, forms, the guard on deleting referenced records, and saving unsaved work. Templates and the export come in only as sources of bean rows.
+4. **Convert and merge**: bean rows from templates and exports into a backup, backup beans out to a template, and the export validation summary.
 5. **Polish**: empty states, error handling, the translation pass, Lighthouse, and a README.
 6. (Separate thread) URL autofill.
