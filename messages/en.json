@@ -1,18 +1,11 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "app_name": "Bean Editor",
-  "app_tagline": "Create and edit Beanconqueror backups and bean lists, right in your browser.",
+  "app_tagline": "Edit your Beanconqueror backup right in your browser: beans, brews, grinders and methods.",
   "open_file": "Open file",
-  "drop_hint": "or drop a backup (.zip) or bean list (.xlsx) here",
+  "drop_hint": "or drop a Beanconqueror backup (.zip) here",
   "privacy_note": "Files never leave your device.",
   "loading": "Loading…",
-  "detected_backup": "Beanconqueror backup",
-  "detected_roasted_template": "Roasted beans list",
-  "detected_green_template": "Green beans list",
-  "detected_excel_export": "Beanconqueror Excel export",
-  "detected_unknown": "Not a Beanconqueror file",
-  "file_close": "Close",
-  "file_size": "{size} KB",
   "error_read": "Couldn't read this file.",
   "update_available": "A new version is available.",
   "update_reload": "Update",
@@ -158,5 +151,6 @@
   "gear_name": "Name",
   "gear_note": "Notes",
   "gear_delete_blocked": "This can't be deleted because brews use it (brews: {count}). Archive it instead to hide it from lists.",
-  "gear_delete_confirm": "Delete this? This can't be undone once you download the backup."
+  "gear_delete_confirm": "Delete this? This can't be undone once you download the backup.",
+  "not_a_backup": "This isn't a Beanconqueror backup. In the app, go to Settings, Transfer data and choose Export to get one."
 }
