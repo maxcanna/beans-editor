@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "yarn i18n && svelte-check --tsconfig ./tsconfig.app.json --fail-on-warnings && tsc -p tsconfig.node.json && tsc -p tsconfig.e2e.json",
+    "check": "yarn i18n && svelte-check --tsconfig ./tsconfig.app.json --fail-on-warnings && tsc -p tsconfig.node.json && tsc -p tsconfig.e2e.json && tsc -p tsconfig.test.json",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",

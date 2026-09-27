@@ -15,4 +15,9 @@ export default ts.config(
     files: ['**/*.svelte', '**/*.svelte.ts'],
     languageOptions: { parserOptions: { parser: ts.parser, extraFileExtensions: ['.svelte'] } },
   },
+  {
+    // Tests assert shape first; `!` keeps them readable.
+    files: ['**/*.test.ts', 'e2e/**/*.ts'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+  },
 );
