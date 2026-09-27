@@ -40,6 +40,13 @@ export type BackupData = Record<string, unknown> & Partial<Record<CollectionKey,
 
 export class BackupError extends Error {
   override name = 'BackupError';
+  /** True when the file isn't a Beanconqueror backup at all, rather than a damaged one. */
+  constructor(
+    message: string,
+    readonly notBackup = false,
+  ) {
+    super(message);
+  }
 }
 
 const chunkFileName = (fileName: string, index: number) => `Beanconqueror_${fileName}_${index}.json`;
@@ -57,10 +64,10 @@ export function readBackup(bytes: Uint8Array): BackupData {
   try {
     files = unzipSync(bytes);
   } catch {
-    throw new BackupError('Not a zip file');
+    throw new BackupError('Not a zip file', true);
   }
   const main = files[MAIN_FILE];
-  if (!main) throw new BackupError(`The zip has no ${MAIN_FILE}`);
+  if (!main) throw new BackupError(`The zip has no ${MAIN_FILE}`, true);
 
   const data = parseJson(main, MAIN_FILE);
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
