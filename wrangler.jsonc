@@ -7,9 +7,9 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application",
   },
-  // Production hostname. Cloudflare creates the DNS record and certificate on deploy;
-  // example.com must be a zone on the same Cloudflare account.
-  "routes": [{ "pattern": "bean-editor.example.com", "custom_domain": true }],
+  // No "routes" on purpose: the repository doesn't name a hostname. Attach a custom
+  // domain in the Cloudflare dashboard (Worker › Settings › Domains & Routes); without a
+  // "routes" key, deploys leave the dashboard's domains alone.
   // Keep *.workers.dev so branch preview URLs keep working.
   "workers_dev": true,
   "preview_urls": true,
