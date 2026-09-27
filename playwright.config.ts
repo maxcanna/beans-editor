@@ -20,7 +20,7 @@ export default defineConfig({
   ],
   // The service worker only exists in production builds.
   webServer: {
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+    command: `yarn build && yarn vite preview --port ${PORT} --strictPort`,
     port: PORT,
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,

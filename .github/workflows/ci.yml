@@ -13,30 +13,66 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup node
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      # Typecheck, lint, format, unit tests, build and size budget.
-      - run: npm run validate
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Type check
+        run: yarn check
+      - name: Lint
+        run: yarn lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Unit tests
+        run: yarn test
+      - name: Build
+        run: yarn build
+      - name: Bundle size budget
+        run: yarn size
 
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup node
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Install Chromium
+        run: yarn playwright install --with-deps chromium
+      - name: E2E tests
+        run: yarn test:e2e
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-report

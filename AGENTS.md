@@ -8,23 +8,25 @@ A backend-free, offline-first PWA that creates and edits the files [Beanconquero
 
 ## Commands
 
-| Task                          | Command                                                    |
-| ----------------------------- | ---------------------------------------------------------- |
-| Install                       | `npm ci` (Node 22, see `.nvmrc`)                           |
-| Dev server                    | `npm run dev` (no service worker in dev)                   |
-| Everything CI runs except e2e | `npm run validate`                                         |
-| Types                         | `npm run check` (svelte-check + tsc for config and e2e)    |
-| Lint + format check           | `npm run lint` (`npm run format` to fix)                   |
-| Unit tests                    | `npm test` (Vitest, `src/**/*.test.ts`)                    |
-| E2E tests                     | `npm run test:e2e` (Playwright, builds and serves `dist/`) |
-| Initial JS budget             | `npm run size` (100 KB gzipped, after `npm run build`)     |
-| Deploy                        | `npm run deploy` (Wrangler to Cloudflare static assets)    |
+| Task                          | Command                                                           |
+| ----------------------------- | ----------------------------------------------------------------- |
+| Install                       | `corepack enable && yarn install` (Yarn 4, Node 24, see `.nvmrc`) |
+| Dev server                    | `yarn dev` (no service worker in dev)                             |
+| Everything CI runs except e2e | `yarn validate`                                                   |
+| Types                         | `yarn check` (svelte-check + tsc for config and e2e)              |
+| Lint + format check           | `yarn lint` (`yarn format` to fix)                                |
+| Unit tests                    | `yarn test` (Vitest, `src/**/*.test.ts`)                          |
+| E2E tests                     | `yarn test:e2e` (Playwright, builds and serves `dist/`)           |
+| Initial JS budget             | `yarn size` (100 KB gzipped, after `yarn build`)                  |
+| Deploy                        | `yarn deploy` (Wrangler to Cloudflare static assets)              |
 
-If Chromium is preinstalled somewhere instead of via `npx playwright install`, set `PW_CHROMIUM_PATH` to its executable.
+Use Yarn 4 (via Corepack) only, never npm; `yarn.lock` is the lockfile and `.yarnrc.yml` uses the `node-modules` linker. If Corepack can't reach repo.yarnpkg.com, set `COREPACK_NPM_REGISTRY=https://registry.npmjs.org`.
+
+If Chromium is preinstalled somewhere instead of via `yarn playwright install`, set `PW_CHROMIUM_PATH` to its executable.
 
 ## Definition of done
 
-Every change must pass `npm run validate` and `npm run test:e2e` before it is pushed. Add or update tests with the change: unit tests for parsing, writing and state; e2e tests for user flows. Never skip, disable or loosen a test to get green.
+Every change must pass `yarn validate` and `yarn test:e2e` before it is pushed. Add or update tests with the change: unit tests for parsing, writing and state; e2e tests for user flows. Never skip, disable or loosen a test to get green.
 
 ## Architecture
 
