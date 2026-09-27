@@ -1,13 +1,42 @@
 import type { Page } from '@playwright/test';
-import { strToU8, zipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 
-export const backupZip = () =>
-  Buffer.from(
-    zipSync({
-      'Beanconqueror.json': strToU8(JSON.stringify({ BEANS: [], BREWS: [], MILL: [], PREPARATION: [] })),
-      'Beanconqueror_Brews_1.json': strToU8('[]'),
-    }),
-  );
+const config = (uuid: string, unix_timestamp = 1_700_000_000) => ({ uuid, unix_timestamp });
+
+/** A small synthetic backup: one bean used by a brew, one unused. */
+export const backupData = () => ({
+  BEANS: [
+    {
+      name: 'Finca Example',
+      roaster: 'Sample Roasters',
+      roast: 'CITY_ROAST',
+      weight: 250,
+      finished: false,
+      config: config('bean-used', 1_700_000_100),
+      futureField: 'kept',
+    },
+    {
+      name: 'Unused Lot',
+      roaster: 'Other Roasters',
+      finished: false,
+      config: config('bean-unused', 1_700_000_000),
+    },
+  ],
+  BREWS: [{ bean: 'bean-used', mill: 'mill-1', method_of_preparation: 'prep-1', config: config('brew-1') }],
+  MILL: [{ name: 'Grinder', config: config('mill-1') }],
+  PREPARATION: [{ name: 'V60', config: config('prep-1') }],
+  SETTINGS: [{ bean_rating: 5 }],
+  VERSION: [{ app: 'test' }],
+});
+
+export const backupZip = (data: object = backupData()) =>
+  Buffer.from(zipSync({ 'Beanconqueror.json': strToU8(JSON.stringify(data)) }));
+
+/** Reads Beanconqueror.json from a downloaded backup. */
+export function readBackupJson(bytes: Buffer): Record<string, unknown> {
+  const files = unzipSync(new Uint8Array(bytes));
+  return JSON.parse(strFromU8(files['Beanconqueror.json']!)) as Record<string, unknown>;
+}
 
 export const roastedTemplate = () =>
   Buffer.from(
