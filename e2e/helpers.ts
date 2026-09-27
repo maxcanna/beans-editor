@@ -42,15 +42,6 @@ export function readBackupJson(bytes: Buffer): Record<string, unknown> {
   return JSON.parse(strFromU8(files['Beanconqueror.json']!)) as Record<string, unknown>;
 }
 
-export const roastedTemplate = () =>
-  Buffer.from(
-    zipSync({
-      'xl/workbook.xml': strToU8(
-        '<workbook><sheets><sheet name="Readme_and_Consistency_Check"/><sheet name="Beans"/><sheet name="Bean_Information"/></sheets></workbook>',
-      ),
-    }),
-  );
-
 /** Waits until the service worker controls the page and has precached the build. */
 export async function waitForServiceWorker(page: Page) {
   await page.evaluate(async () => {

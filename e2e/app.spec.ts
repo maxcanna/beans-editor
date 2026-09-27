@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { backupZip, roastedTemplate, sharePost, waitForServiceWorker } from './helpers';
+import { strToU8, zipSync } from 'fflate';
+import { backupZip, sharePost, waitForServiceWorker } from './helpers';
 
 test('opens a backup from the file picker into the editor', async ({ page }) => {
   await page.goto('/');
@@ -14,15 +15,21 @@ test('opens a backup from the file picker into the editor', async ({ page }) => 
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
 });
 
-test('flags files that are not Beanconqueror files', async ({ page }) => {
-  await page.goto('/');
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'notes.xlsx',
-    mimeType: 'application/octet-stream',
-    buffer: Buffer.from('hello'),
+for (const [what, buffer] of [
+  ['a file that is not a zip', Buffer.from('hello')],
+  ['a zip that is not a backup', Buffer.from(zipSync({ 'notes.txt': strToU8('hello') }))],
+] as const) {
+  test(`says how to get a backup when given ${what}`, async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('file-input').setInputFiles({
+      name: 'beans.zip',
+      mimeType: 'application/zip',
+      buffer,
+    });
+    await expect(page.getByRole('alert')).toContainText("This isn't a Beanconqueror backup");
+    await expect(page.getByTestId('backup-editor')).toHaveCount(0);
   });
-  await expect(page.getByTestId('file-kind')).toHaveText('Not a Beanconqueror file');
-});
+}
 
 test('explains why a broken backup can not be opened', async ({ page }) => {
   await page.goto('/');
@@ -43,11 +50,12 @@ test.describe('offline', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Bean Editor' })).toBeVisible();
     await page.getByTestId('file-input').setInputFiles({
-      name: 'beans.xlsx',
-      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      buffer: roastedTemplate(),
+      name: 'Beanconqueror.zip',
+      mimeType: 'application/zip',
+      buffer: backupZip(),
     });
-    await expect(page.getByTestId('file-kind')).toHaveText('Roasted beans list');
+    await page.getByRole('tab', { name: /^Brews/ }).click();
+    await expect(page.getByTestId('brews-count')).toHaveText('Showing 1 of 1');
   });
 
   test('receives a shared backup through the share target while offline', async ({ page, context }) => {
