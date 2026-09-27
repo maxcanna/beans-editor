@@ -36,7 +36,13 @@ yarn build && yarn preview
 
 ## Deploying
 
-The app is a static site on Cloudflare (Workers static assets, see `wrangler.jsonc`). The easiest setup is Cloudflare's Git integration: in the Cloudflare dashboard, create a Worker from this repository with build command `yarn build`. Every push to `main` then deploys, and other branches get preview URLs.
+Production is https://beans.massi.dev, a static site on Cloudflare Workers (static assets, see `wrangler.jsonc`). Cloudflare's Git integration (Workers Builds) deploys it:
+
+- **Build command:** `yarn build`
+- **Deploy command:** `yarn wrangler deploy`
+- Pushes to `main` deploy to production; other branches get preview URLs on `workers.dev`.
+
+The custom domain is declared in `wrangler.jsonc`, so Cloudflare creates the DNS record and certificate on the first deploy. This requires `massi.dev` to be a zone on the same Cloudflare account.
 
 ## Contributing
 
