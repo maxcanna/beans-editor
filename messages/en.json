@@ -1,0 +1,20 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "Bean Editor",
+  "app_tagline": "Create and edit Beanconqueror backups and bean lists, right in your browser.",
+  "open_file": "Open file",
+  "drop_hint": "or drop a backup (.zip) or bean list (.xlsx) here",
+  "privacy_note": "Files never leave your device.",
+  "loading": "Loading…",
+  "detected_backup": "Beanconqueror backup",
+  "detected_roasted_template": "Roasted beans list",
+  "detected_green_template": "Green beans list",
+  "detected_excel_export": "Beanconqueror Excel export",
+  "detected_unknown": "Not a Beanconqueror file",
+  "file_close": "Close",
+  "file_size": "{size} KB",
+  "error_read": "Couldn't read this file.",
+  "update_available": "A new version is available.",
+  "update_reload": "Update",
+  "offline_ready": "Ready to work offline."
+}
