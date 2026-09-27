@@ -1,12 +1,10 @@
 import type { ManifestOptions } from 'vite-plugin-pwa';
 
-const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
 export const manifest: Partial<ManifestOptions> = {
   id: '/',
   name: 'Bean Editor',
   short_name: 'Bean Editor',
-  description: 'Create and edit Beanconqueror backups and bean lists, offline, in your browser.',
+  description: 'Edit Beanconqueror backups offline, in your browser.',
   start_url: '/',
   scope: '/',
   display: 'standalone',
@@ -20,12 +18,12 @@ export const manifest: Partial<ManifestOptions> = {
     action: '/share-target',
     method: 'POST',
     enctype: 'multipart/form-data',
-    // Files only: links are pasted in the app's UI instead.
+    // Some apps share zips as octet-stream; the app checks the contents, not the type.
     params: {
       files: [
         {
           name: 'file',
-          accept: ['application/zip', 'application/x-zip-compressed', XLSX_MIME, '.zip', '.xlsx'],
+          accept: ['application/zip', 'application/x-zip-compressed', '.zip'],
         },
       ],
     },

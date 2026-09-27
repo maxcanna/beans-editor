@@ -4,8 +4,7 @@
   import { tick } from 'svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
-  import { BLENDS, ROASTING_TYPES, ROASTS } from '../../formats/beans/enums';
-  import { MAX_ORIGINS } from '../../formats/beans/model';
+  import { BLENDS, ROASTING_TYPES, ROASTS } from '../../formats/backup/enums';
   import { applyBeanForm, beanForm, emptyOrigin, validateBean, type BeanOrigin } from '../../editor/beans';
   import { BLEND_LABELS, ERROR_LABELS, ROAST_LABELS, ROASTING_TYPE_LABELS } from '../../editor/labels';
 
@@ -258,16 +257,14 @@
               </div>
             </div>
           {/each}
-          {#if form.bean_information.length < MAX_ORIGINS}
-            <button
-              type="button"
-              class="{button} border border-border hover:bg-border/40"
-              onclick={() => form.bean_information.push(emptyOrigin())}
-            >
-              <Plus class="size-4" aria-hidden="true" />
-              {m.bean_origin_add()}
-            </button>
-          {/if}
+          <button
+            type="button"
+            class="{button} border border-border hover:bg-border/40"
+            onclick={() => form.bean_information.push(emptyOrigin())}
+          >
+            <Plus class="size-4" aria-hidden="true" />
+            {m.bean_origin_add()}
+          </button>
         </fieldset>
 
         {#if confirmingDelete}

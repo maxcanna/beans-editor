@@ -1,5 +1,5 @@
 import type { BackupRecord } from '../formats/backup/backup';
-import type { Blend, RoastingType, Roast } from '../formats/beans/enums';
+import type { Blend, RoastingType, Roast } from '../formats/backup/enums';
 import { newConfig } from './records';
 
 /**

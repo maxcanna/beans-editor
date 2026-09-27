@@ -7,20 +7,15 @@
   import UpdateBanner from './lib/components/UpdateBanner.svelte';
   import { EditorSession } from './lib/editor/session.svelte';
   import { consumeShare, readLocalFile, type IncomingFile } from './lib/files/incoming';
-  import type { DetectedFile } from './lib/files/detect';
 
-  // Heavy code (zip parsing, the editor, the summary view) is split into lazy
-  // chunks; the service worker still precaches them, so this only speeds up startup.
-  const loadDetect = () => import('./lib/files/detect');
+  // Heavy code (zip parsing, the editor) is split into lazy chunks; the
+  // service worker still precaches them, so this only speeds up startup.
   const loadBackup = () => import('./lib/formats/backup/backup');
-  const loadSummary = () => import('./lib/components/FileSummary.svelte');
   const loadEditor = () => import('./lib/components/editor/BackupEditor.svelte');
   const loadOutput = () => import('./lib/editor/output');
 
   const session = new EditorSession();
 
-  /** A non-backup file shown as a summary (templates and exports come in as sources later). */
-  let summary = $state<Promise<DetectedFile> | null>(null);
   let openError = $state<string | null>(null);
   let notice = $state<'restored' | null>(null);
   let invalidDraft = $state<{ raw: unknown } | null>(null);
@@ -30,23 +25,16 @@
   async function open(file: IncomingFile) {
     openError = null;
     notice = null;
-    const { detectFile } = await loadDetect();
-    const detected = detectFile(file.name, file.bytes);
-    if (detected.kind !== 'backup') {
-      summary = Promise.resolve(detected);
-      return;
-    }
+    const { readBackup, BackupError } = await loadBackup();
     try {
-      const { readBackup } = await loadBackup();
       const data = readBackup(file.bytes);
-      const replace = () => {
-        summary = null;
-        session.open(file.name, data);
-      };
+      const replace = () => session.open(file.name, data);
       if (session.data && session.dirty) pending = { name: file.name, open: replace };
       else replace();
     } catch (error) {
-      openError = error instanceof Error ? error.message : String(error);
+      if (error instanceof BackupError && error.notBackup) openError = m.not_a_backup();
+      else
+        openError = m.editor_error_open({ reason: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -117,7 +105,7 @@
 
     {#if openError}
       <p role="alert" class="rounded-2xl border border-danger/40 bg-danger/5 p-5 text-danger">
-        {m.editor_error_open({ reason: openError })}
+        {openError}
       </p>
     {/if}
 
@@ -143,22 +131,6 @@
       {/await}
     {:else}
       <p class="text-lg text-balance text-muted">{m.app_tagline()}</p>
-
-      {#if summary}
-        {#await Promise.all([summary, loadSummary()])}
-          <div
-            class="h-28 animate-pulse rounded-2xl bg-border/40"
-            aria-busy="true"
-            aria-label={m.loading()}
-          ></div>
-        {:then [detected, { default: FileSummary }]}
-          <FileSummary file={detected} onclose={() => (summary = null)} />
-        {:catch}
-          <p role="alert" class="rounded-2xl border border-danger/40 bg-danger/5 p-5 text-danger">
-            {m.error_read()}
-          </p>
-        {/await}
-      {/if}
 
       <DropZone onfile={async (file) => open(await readLocalFile(file))} />
     {/if}

@@ -46,7 +46,7 @@
   <input
     bind:this={input}
     type="file"
-    accept=".zip,.xlsx,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    accept=".zip,application/zip"
     class="sr-only"
     tabindex="-1"
     aria-hidden="true"

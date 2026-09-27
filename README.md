@@ -1,15 +1,15 @@
 # Bean Editor
 
-Create and edit [Beanconqueror](https://beanconqueror.com) files right in your browser: backups (`.zip`), roasted and green bean lists, and Excel exports (`.xlsx`). There's no backend, the app works offline once installed, and your files never leave your device.
+Edit [Beanconqueror](https://beanconqueror.com) backups (`.zip`) right in your browser. The backup is the only Beanconqueror file that holds everything, so it's the only one Bean Editor reads and writes: nothing is lost on the way back into the app. There's no backend, the app works offline once installed, and your files never leave your device.
 
 ## Features
 
-- Opens Beanconqueror backups, bean import templates and Excel exports, and recognises each one by its content.
+- Add, edit, archive and delete beans; edit and delete brews; edit grinders and methods, and add grinders.
+- Records you don't touch are written back exactly as they were.
+- Unsaved work is kept in the browser, so a reload or a closed tab loses nothing.
 - Installable PWA that works fully offline.
-- On Android, share a `.zip` or `.xlsx` from any app to Bean Editor to open it straight away.
+- On Android, share a backup from any app to Bean Editor to open it straight away.
 - Light and dark themes that follow your system.
-
-Editing, converting and exporting are in progress; see [docs/spec.md](docs/spec.md).
 
 ## Getting started
 

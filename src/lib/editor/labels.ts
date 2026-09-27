@@ -1,5 +1,5 @@
 import { m } from '$paraglide/messages';
-import type { Blend, Roast, RoastingType } from '../formats/beans/enums';
+import type { Blend, Roast, RoastingType } from '../formats/backup/enums';
 
 /** Translatable labels for the codes Beanconqueror stores. */
 export const ROAST_LABELS: Record<Roast, () => string> = {
