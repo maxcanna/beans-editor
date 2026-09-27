@@ -39,7 +39,7 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Precache the whole build (lazy chunks and bundled templates included) so the app works offline.
+// Precache the whole build (lazy chunks included) so the app works offline.
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));

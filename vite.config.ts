@@ -24,8 +24,8 @@ export default defineConfig({
       injectRegister: false,
       manifest,
       injectManifest: {
-        // Precache every build output, including lazy chunks and bundled templates.
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,xlsx,json}'],
+        // Precache every build output, including lazy chunks.
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json}'],
       },
       devOptions: { enabled: false },
     }),
