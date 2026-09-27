@@ -192,3 +192,85 @@ test('offers to download stored work that no longer passes the check', async ({ 
   await page.reload();
   await expect(page.getByTestId('invalid-draft')).toBeHidden();
 });
+
+test('edits a brew and deletes another', async ({ page }) => {
+  const data = backupData();
+  data.BREWS.push({
+    bean: 'bean-unused',
+    mill: 'mill-1',
+    method_of_preparation: 'prep-1',
+    config: { uuid: 'brew-2', unix_timestamp: 1_700_100_000 },
+  });
+  await openBackup(page, data);
+  await page.getByRole('tab', { name: 'Brews (2)' }).click();
+  await expect(page.getByTestId('brews-count')).toHaveText('Showing 2 of 2');
+
+  // Phones fold the filters behind a toggle; wider screens always show them.
+  const toggle = page.locator('button[aria-controls="brew-filters"]');
+  if (await toggle.isVisible()) await toggle.click();
+  await page.getByRole('combobox', { name: /^Bean/ }).selectOption({ label: 'Unused Lot' });
+  await expect(page.getByTestId('brews-count')).toHaveText('Showing 1 of 2');
+  if (await toggle.isVisible()) await expect(toggle).toHaveText('Filters: 1');
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+
+  await page.getByRole('listitem').filter({ hasText: 'Finca Example' }).getByRole('button').click();
+  const dialog = page.getByTestId('brew-dialog');
+  await dialog.getByLabel('Grind size').fill('18');
+  await dialog.getByLabel('Dose (g)').fill('15.5');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole('listitem').filter({ hasText: 'Unused Lot' }).getByRole('button').click();
+  await dialog.getByRole('button', { name: 'Delete' }).click();
+  await dialog.getByRole('alert').getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('tab', { name: 'Brews (1)' })).toBeVisible();
+
+  const brews = (await downloadBackup(page))['BREWS'];
+  expect(brews).toEqual([{ ...data.BREWS[0], grind_size: '18', grind_weight: 15.5 }]);
+});
+
+test('keeps long brew lists fast by rendering only the rows in view', async ({ page }) => {
+  const data = backupData();
+  data.BREWS = Array.from({ length: 3000 }, (_, i) => ({
+    bean: 'bean-used',
+    mill: 'mill-1',
+    method_of_preparation: 'prep-1',
+    note: `brew number ${i}`,
+    config: { uuid: `brew-${i}`, unix_timestamp: 1_700_000_000 + i * 60 },
+  }));
+  await openBackup(page, data);
+  await page.getByRole('tab', { name: 'Brews (3000)' }).click();
+  const list = page.getByRole('list', { name: 'Brews' });
+  await expect(list.getByRole('listitem').first()).toBeVisible();
+  expect(await list.getByRole('listitem').count()).toBeLessThan(60);
+
+  await page.getByRole('searchbox', { name: 'Search brews' }).fill('number 2999');
+  await expect(page.getByTestId('brews-count')).toHaveText('Showing 1 of 3000');
+});
+
+test('adds a grinder and guards grinders and methods that brews use', async ({ page }) => {
+  await openBackup(page);
+  await page.getByRole('tab', { name: 'Grinders (1)' }).click();
+  await page.getByRole('button', { name: 'Add grinder' }).click();
+  const dialog = page.getByTestId('gear-dialog');
+  await dialog.getByLabel('Name').fill('Hand grinder');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('tab', { name: 'Grinders (2)' })).toBeVisible();
+
+  await page.getByRole('button', { name: /^Grinder/ }).click();
+  await dialog.getByRole('button', { name: 'Delete' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('brews use it (brews: 1)');
+  await dialog.getByRole('button', { name: 'Cancel' }).last().click();
+
+  await page.getByRole('tab', { name: 'Methods (1)' }).click();
+  await page.getByRole('button', { name: /V60/ }).click();
+  await dialog.getByLabel('Name').fill('V60 02');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('button', { name: /V60 02/ })).toBeVisible();
+
+  const json = await downloadBackup(page);
+  expect(json['PREPARATION']).toEqual([
+    { name: 'V60 02', config: { uuid: 'prep-1', unix_timestamp: 1_700_000_000 } },
+  ]);
+  expect((json['MILL'] as { name: string }[]).map((g) => g.name)).toEqual(['Grinder', 'Hand grinder']);
+});

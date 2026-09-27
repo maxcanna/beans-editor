@@ -4,7 +4,11 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 const config = (uuid: string, unix_timestamp = 1_700_000_000) => ({ uuid, unix_timestamp });
 
 /** A small synthetic backup: one bean used by a brew, one unused. */
-export const backupData = () => ({
+export const backupData = (): {
+  BEANS: Record<string, unknown>[];
+  BREWS: Record<string, unknown>[];
+  [key: string]: unknown;
+} => ({
   BEANS: [
     {
       name: 'Finca Example',
