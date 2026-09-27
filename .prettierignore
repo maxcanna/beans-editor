@@ -1,0 +1,6 @@
+dist
+src/lib/paraglide
+package-lock.json
+test-results
+playwright-report
+.wrangler
