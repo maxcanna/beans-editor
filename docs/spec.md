@@ -35,7 +35,8 @@ Rules:
 
 - Built with vite-plugin-pwa in `injectManifest` mode, with our own service worker.
 - **The whole build is precached**: every JS chunk, CSS, the self-hosted fonts and icons. After the first visit nothing needs the network.
-- **The manifest has a `share_target`** (POST, multipart) for backups only: `.zip`, `application/zip` and `application/x-zip-compressed`. `application/octet-stream` is not accepted, so the app doesn't show up for every unknown file. Links are not shared to the app: the URL autofill is a "Paste link" field in the UI. The service worker catches the POST, stores the file in IndexedDB, and redirects (303) to `/?shared-file=1`. This works offline.
+- **The manifest has a `share_target`** (POST, multipart) for backups (`.zip`, `application/zip`, `application/x-zip-compressed`) and for shared links (`title`, `text`, `url`). `application/octet-stream` is not accepted, so the app doesn't show up for every unknown file. The service worker catches the POST, stores a file in IndexedDB, and redirects (303) to `/?shared-file=1`. This works offline.
+- **Sharing a product page**: the service worker finds the URL in the shared text, builds a bean, and answers with a 303 redirect to `beanconqueror://ADD_USER_BEAN?shareUserBean0=…` (the app's own bean share link: BeanProto, base64, 400-character chunks; no allow-list). Beanconqueror's prefilled Add Bean screen is the review step. Extracting the bean's details from the page (via Jina) comes next.
 - **Opening a shared file**: it goes straight into the editor. Only if unsaved work exists does the app ask: replace, merge, or cancel.
 - **Updates**: a new version waits in the background. An "Update available" banner switches over when tapped, so nothing reloads while you're editing.
 - **An automated Playwright test runs with the network cut**: open a backup, edit it, export it, and share a file into it.

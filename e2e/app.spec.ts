@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { strToU8, zipSync } from 'fflate';
-import { backupZip, sharePost, waitForServiceWorker } from './helpers';
+import { backupZip, sharePost, shareText, waitForServiceWorker } from './helpers';
 
 test('opens a backup from the file picker into the editor', async ({ page }) => {
   await page.goto('/');
@@ -70,5 +70,22 @@ test.describe('offline', () => {
     await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
     // The share parameter is consumed, so a reload does not re-open the file.
     await expect(page).toHaveURL(/\/$/);
+  });
+
+  test('turns a shared product page into a Beanconqueror bean link while offline', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/');
+    await waitForServiceWorker(page);
+    await context.setOffline(true);
+
+    const opened = page.waitForRequest((request) => request.url().startsWith('beanconqueror:'));
+    await shareText(page, { title: 'Guji', text: 'Look: https://shop.example/products/guji-natural?v=2' });
+    const link = new URL((await opened).url());
+    expect(link.href).toMatch(/^beanconqueror:\/\/ADD_USER_BEAN\?shareUserBean0=/);
+    const payload = atob(link.searchParams.get('shareUserBean0') ?? '');
+    expect(payload).toContain('Guji Natural');
+    expect(payload).toContain('https://shop.example/products/guji-natural?v=2');
   });
 });

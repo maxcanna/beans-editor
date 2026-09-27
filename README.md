@@ -9,6 +9,7 @@ Edit [Beanconqueror](https://beanconqueror.com) backups (`.zip`) right in your b
 - Unsaved work is kept in the browser, so a reload or a closed tab loses nothing.
 - Installable PWA that works fully offline.
 - On Android, share a backup from any app to Bean Editor to open it straight away.
+- Share a roaster's product page to Bean Editor and Beanconqueror opens its Add Bean screen, already filled in. No backup needed. For now it fills in the name (from the link) and the link itself.
 - Light and dark themes that follow your system.
 
 ## Getting started
