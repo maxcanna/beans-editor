@@ -25,7 +25,7 @@ export default defineConfig({
       manifest,
       injectManifest: {
         // Precache every build output, including lazy chunks.
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff2,json}'],
       },
       devOptions: { enabled: false },
     }),
