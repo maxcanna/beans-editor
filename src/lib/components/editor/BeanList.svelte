@@ -15,7 +15,7 @@
   let { beans, brewCount, onopen, onadd }: Props = $props();
 
   type View = 'cards' | 'grid';
-  const VIEW_KEY = 'bean-editor:beans-view';
+  const VIEW_KEY = 'beans-editor:beans-view';
 
   function initialView(): View {
     try {
