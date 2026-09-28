@@ -1,0 +1,59 @@
+name: PR Version Bump
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Bump version if unchanged
+        run: |
+          # Fetch the base branch to compare against
+          git fetch origin ${{ github.base_ref }}
+
+          OLD_VERSION=$(git show origin/${{ github.base_ref }}:package.json | jq -r .version)
+          NEW_VERSION=$(jq -r .version package.json)
+
+          if [ "$(printf '%s\n' "$OLD_VERSION" "$NEW_VERSION" | sort -V | head -n1)" = "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+            echo "Version has correctly been increased from $OLD_VERSION to $NEW_VERSION."
+          else
+            echo "Version $NEW_VERSION is not strictly greater than base version $OLD_VERSION. Bumping version..."
+
+            # Configure git user using the last non-merge commit's author
+            git config user.name "$(git log -1 --no-merges --pretty=format:'%an')"
+            git config user.email "$(git log -1 --no-merges --pretty=format:'%ae')"
+
+            # Rebase onto base branch to avoid conflicts on the version file when merging
+            echo "Rebasing PR branch onto origin/${{ github.base_ref }}..."
+            git rebase origin/${{ github.base_ref }}
+
+            # Bump patch version using yarn without creating a git tag
+            yarn version patch
+
+            # Commit the change
+            git add package.json
+            git commit -m "Bump version"
+
+            # Force push changes back to the PR branch due to rebase
+            git push --force-with-lease origin HEAD:${{ github.head_ref }}
+          fi
