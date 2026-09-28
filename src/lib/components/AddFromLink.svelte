@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleCheck, ExternalLink, LoaderCircle, TriangleAlert, X } from '@lucide/svelte';
+  import { CircleCheck, ExternalLink, LoaderCircle, Plus, RotateCw, TriangleAlert, X } from '@lucide/svelte';
   import { Dialog } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { beanLink, findSharedUrl, nameFromUrl, type SharedBean } from '../beanlink/bean-link';
@@ -10,9 +10,14 @@
 
   interface Props {
     onclose: () => void;
+    /**
+     * Set when opened from a backup being edited: the bean goes into that
+     * backup instead of being sent to Beanconqueror.
+     */
+    onadd?: (bean: SharedBean) => void;
   }
 
-  let { onclose }: Props = $props();
+  let { onclose, onadd }: Props = $props();
 
   /** The review form: every field a plain string, so inputs can bind to it. */
   interface Form {
@@ -42,6 +47,9 @@
   let online = $state(navigator.onLine);
   let form = $state<Form | null>(null);
   let controller: AbortController | undefined;
+  let typingTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The link being read, shown while it loads. */
+  let readingHost = $state('');
 
   function toForm(bean: SharedBean): Form {
     const origin = bean.bean_information?.[0] ?? {};
@@ -112,12 +120,15 @@
   const link = $derived(form && form.name.trim() ? beanLink(toBean(form)) : undefined);
 
   async function read(text = input) {
+    clearTimeout(typingTimer);
     const url = findSharedUrl(text);
     if (!url) {
       error = m.link_invalid();
       return;
     }
+    if (!online) return;
     error = null;
+    readingHost = url.hostname.replace(/^www\./, '');
     step = 'reading';
     controller = new AbortController();
     try {
@@ -137,6 +148,7 @@
 
   /** Stops reading, or skips it: the form opens with what the link itself says. */
   function fillByHand() {
+    clearTimeout(typingTimer);
     controller?.abort();
     const url = findSharedUrl(input);
     form = toForm(url ? { name: nameFromUrl(url), url: url.href } : { name: '' });
@@ -146,11 +158,22 @@
 
   function onpaste(event: ClipboardEvent) {
     const text = event.clipboardData?.getData('text') ?? '';
-    if (online && findSharedUrl(text)) {
+    if (step === 'link' && online && findSharedUrl(text)) {
       event.preventDefault();
       input = text.trim();
       void read(text);
     }
+  }
+
+  /**
+   * A link typed, or pasted by a keyboard's clipboard chip (which sends no
+   * paste event), is read once the input settles.
+   */
+  function oninput() {
+    clearTimeout(typingTimer);
+    error = null;
+    if (!online || !findSharedUrl(input)) return;
+    typingTimer = setTimeout(() => void read(), 800);
   }
 
   const ORIGIN_FIELDS: { key: OriginKey; label: () => string }[] = [
@@ -167,7 +190,10 @@
 <svelte:window onoffline={() => (online = false)} ononline={() => (online = true)} />
 <svelte:document onvisibilitychange={onVisibilityChange} />
 
-<Dialog.Root open onOpenChange={(open) => !open && (controller?.abort(), onclose())}>
+<Dialog.Root
+  open
+  onOpenChange={(open) => !open && (clearTimeout(typingTimer), controller?.abort(), onclose())}
+>
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
     <Dialog.Content
@@ -193,21 +219,33 @@
             void read();
           }}
         >
-          <Dialog.Description class="text-sm text-muted">{m.link_intro()}</Dialog.Description>
+          <Dialog.Description class="text-sm text-muted"
+            >{onadd ? m.link_intro_backup() : m.link_intro()}</Dialog.Description
+          >
           <label class={labelClass}>
             {m.link_label()}
-            <input
-              class={inputClass}
-              type="url"
-              inputmode="url"
-              autocomplete="off"
-              placeholder="https://"
-              bind:value={input}
-              {onpaste}
-              disabled={step === 'reading'}
-              aria-invalid={error ? 'true' : undefined}
-              aria-describedby={error ? 'link-error' : undefined}
-            />
+            <span class="relative">
+              <input
+                class="{inputClass} pr-10"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="https://"
+                bind:value={input}
+                {onpaste}
+                {oninput}
+                readonly={step === 'reading'}
+                aria-busy={step === 'reading'}
+                aria-invalid={error ? 'true' : undefined}
+                aria-describedby={error ? 'link-error' : undefined}
+              />
+              {#if step === 'reading'}
+                <LoaderCircle
+                  class="absolute top-1/2 right-3 size-5 -translate-y-1/2 animate-spin text-accent motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              {/if}
+            </span>
           </label>
           {#if error}
             <p id="link-error" role="alert" class="flex items-start gap-2 text-sm text-danger">
@@ -219,9 +257,19 @@
             <p role="status" class="text-sm text-muted">{m.link_offline()}</p>
           {/if}
           {#if step === 'reading'}
-            <p role="status" class="flex items-center gap-2 text-sm text-muted" data-testid="link-reading">
-              <LoaderCircle class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-              {m.link_reading()}
+            <p
+              role="status"
+              class="flex items-start gap-3 rounded-xl border border-border bg-bg p-3 text-sm"
+              data-testid="link-reading"
+            >
+              <LoaderCircle
+                class="mt-0.5 size-4 shrink-0 animate-spin text-accent motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              <span>
+                <span class="block font-medium">{m.link_reading({ host: readingHost })}</span>
+                <span class="block text-muted">{m.link_reading_wait()}</span>
+              </span>
             </p>
           {/if}
         </form>
@@ -231,14 +279,12 @@
           <button type="button" class="{buttonClass} hover:bg-border/40" onclick={fillByHand}>
             {step === 'reading' ? m.link_skip() : m.link_by_hand()}
           </button>
-          <button
-            type="button"
-            class={primaryButtonClass}
-            disabled={!online || step === 'reading' || !input.trim()}
-            onclick={() => read()}
-          >
-            {m.link_read()}
-          </button>
+          {#if error && online && step === 'link' && findSharedUrl(input)}
+            <button type="button" class={primaryButtonClass} onclick={() => read()}>
+              <RotateCw class="size-4" aria-hidden="true" />
+              {m.link_retry()}
+            </button>
+          {/if}
         </footer>
       {:else if form}
         <form
@@ -247,7 +293,7 @@
           onsubmit={(e) => e.preventDefault()}
         >
           <Dialog.Description class="text-sm text-muted"
-            >{m.link_review()} {m.link_backup_untouched()}</Dialog.Description
+            >{m.link_review()} {onadd ? '' : m.link_backup_untouched()}</Dialog.Description
           >
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="{labelClass} sm:col-span-2">
@@ -342,7 +388,17 @@
           >
             {m.link_back()}
           </button>
-          {#if link}
+          {#if onadd}
+            <button
+              type="button"
+              class={primaryButtonClass}
+              disabled={!form.name.trim()}
+              onclick={() => form && onadd(toBean(form))}
+            >
+              <Plus class="size-4" aria-hidden="true" />
+              {m.link_add_to_backup()}
+            </button>
+          {:else if link}
             <a class={primaryButtonClass} href={link} onclick={onOpen} data-testid="open-in-beanconqueror">
               <ExternalLink class="size-4" aria-hidden="true" />
               {m.link_open()}

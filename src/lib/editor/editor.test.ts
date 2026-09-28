@@ -3,6 +3,7 @@ import type { BackupData, BackupRecord } from '../formats/backup/backup';
 import {
   applyBeanForm,
   beanForm,
+  beanFromShared,
   emptyOrigin,
   filterBeans,
   isoFromLocalDay,
@@ -111,6 +112,43 @@ describe('beans', () => {
     expect(created.config.unix_timestamp).toBe(1_700_000_000);
     expect(created.config.uuid).toMatch(/^[0-9a-f-]{36}$/);
     expect(beanForm(created)).toMatchObject({ name: '', beanMix: 'SINGLE_ORIGIN', weight: 0 });
+  });
+
+  it('turns a bean read from a product page into a new backup bean', () => {
+    const bean = beanFromShared(
+      {
+        name: 'Colombia Motta',
+        roaster: 'Guido',
+        weight: 250,
+        cost: 18.5,
+        bean_roasting_type: 'FILTER',
+        external_images: ['https://roaster.example/bag.jpg'],
+        bean_information: [{ country: 'Colombia', processing: 'Washed' }],
+      },
+      1_700_000_000_500,
+    );
+    expect(bean.config.unix_timestamp).toBe(1_700_000_000);
+    expect(bean).toMatchObject({
+      name: 'Colombia Motta',
+      roaster: 'Guido',
+      weight: 250,
+      cost: 18.5,
+      bean_roasting_type: 'FILTER',
+      beanMix: 'SINGLE_ORIGIN',
+      note: '',
+      attachments: [],
+    });
+    expect(bean).not.toHaveProperty('external_images');
+    expect(bean['bean_information']).toEqual([
+      {
+        ...emptyOrigin(),
+        country: 'Colombia',
+        processing: 'Washed',
+        percentage: 0,
+        purchasing_price: 0,
+        fob_price: 0,
+      },
+    ]);
   });
 
   it('validates the form', () => {

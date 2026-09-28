@@ -8,7 +8,7 @@ A backend-free Progressive Web App (PWA) that edits Beanconqueror backups and ad
 1. **Share a URL** (Android share sheet → Beans Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Beans Editor UI shows. The backup is never touched.
 2. **Share a zip**: the file's contents are checked; a valid backup opens in the editor, anything else gets a message saying how to export a backup from the app.
 3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download it.
-4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown for review, then "Open in Beanconqueror" opens the app's Add Bean screen with the same link as flow 1. The open backup is never touched; adding beans to a backup stays a manual edit.
+4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown for review, then "Open in Beanconqueror" opens the app's Add Bean screen with the same link as flow 1. Reading starts as soon as a link is pasted or typed, with a spinner while it runs; there is no Read button, only Try again after a failed read. Opened from the home screen, the bean goes to Beanconqueror and no backup is touched. Opened with "From link" while editing a backup, the button is "Add to backup" instead, and the reviewed bean is added to that backup.
 
 ## 1. File formats
 
