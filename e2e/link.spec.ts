@@ -52,6 +52,38 @@ test('reads a pasted product link and opens the bean in Beanconqueror', async ({
   expect(Buffer.from(payload, 'base64').toString('latin1')).toContain('Motta Red Bourbon');
 });
 
+async function reviewBean(page: Page) {
+  await mockJina(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
+  const dialog = page.getByTestId('add-from-link');
+  await dialog.getByLabel('Product page link').fill(PRODUCT);
+  await dialog.getByRole('button', { name: 'Read page' }).click();
+  return dialog;
+}
+
+// One tap per test: headless Chromium swallows input after an unhandled custom-scheme link.
+test('says when Beanconqueror did not open', async ({ page }) => {
+  const dialog = await reviewBean(page);
+  const status = dialog.getByTestId('open-status');
+  // No app handles the link here, so the page stays in front.
+  await dialog.getByTestId('open-in-beanconqueror').click();
+  await expect(status).toContainText('Opening Beanconqueror');
+  await expect(status).toContainText("Beanconqueror didn't open");
+});
+
+test('confirms the bean was sent when Beanconqueror takes over', async ({ page }) => {
+  const dialog = await reviewBean(page);
+  const status = dialog.getByTestId('open-status');
+  await dialog.getByTestId('open-in-beanconqueror').click();
+  // When the app opens, the page is hidden.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(status).toContainText('Sent to Beanconqueror');
+});
+
 test('starts reading as soon as a link is pasted', async ({ page, context, browserName }) => {
   test.skip(browserName !== 'chromium', 'clipboard permissions are Chromium-only');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
