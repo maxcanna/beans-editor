@@ -53,7 +53,10 @@
   // Raw, so the record stays a plain object that IndexedDB can store.
   let editing = $state.raw<{ key: Editable; record: BackupRecord; isNew: boolean } | null>(null);
   let tab = $state<Editable>('BEANS');
-  const shareable = canShareFiles();
+  let addingFromLink = $state(false);
+  const loadAddFromLink = () => import('../AddFromLink.svelte');
+  let shareable = $state(canShareFiles());
+  let shareFailed = $state(false);
 
   const options = (key: 'BEANS' | 'MILL' | 'PREPARATION') =>
     records(data, key)
@@ -100,7 +103,13 @@
   }
 
   async function shareBackup() {
-    if (await share(bytes(), outputName(session.fileName))) session.markSaved();
+    try {
+      if (await share(bytes(), outputName(session.fileName))) session.markSaved();
+    } catch {
+      // The browser refused the file; Download is the way out.
+      shareable = false;
+      shareFailed = true;
+    }
   }
 
   const action =
@@ -133,6 +142,11 @@
           </span>
         {/if}
       </p>
+      {#if shareFailed}
+        <p role="alert" class="mt-1 text-xs text-danger" data-testid="share-failed">
+          {m.editor_share_failed()}
+        </p>
+      {/if}
     </div>
     <div class="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">
       {#if shareable}
@@ -182,6 +196,7 @@
           brewCount={(uuid) => brewsUsing(data, 'BEANS', uuid)}
           onopen={(uuid) => openRecord('BEANS', uuid)}
           onadd={() => (editing = { key: 'BEANS', record: newBean(), isNew: true })}
+          onaddlink={() => (addingFromLink = true)}
         />
       {/if}
     </Tabs.Content>
@@ -261,4 +276,10 @@
       />
     {/if}
   {/key}
+{/if}
+
+{#if addingFromLink}
+  {#await loadAddFromLink() then { default: AddFromLink }}
+    <AddFromLink onclose={() => (addingFromLink = false)} />
+  {/await}
 {/if}
