@@ -1,6 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "app_name": "Bean Editor",
+  "app_name": "Beans Editor",
   "app_tagline": "Edit your Beanconqueror backup right in your browser: beans, brews, grinders and methods.",
   "open_file": "Open file",
   "drop_hint": "or drop a Beanconqueror backup (.zip) here",
