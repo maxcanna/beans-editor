@@ -8,7 +8,7 @@ A backend-free Progressive Web App (PWA) that edits Beanconqueror backups and ad
 1. **Share a URL** (Android share sheet → Bean Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Bean Editor UI shows. The backup is never touched.
 2. **Share a zip**: the file's contents are checked; a valid backup opens in the editor, anything else gets a message saying how to export a backup from the app.
 3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download or share it back.
-4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown in the bean form for review. From there it's added to the open backup when one is open, and "Open in Beanconqueror" (the same link as flow 1) is always offered. _(Default pending Massi's confirmation.)_
+4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown for review, then "Open in Beanconqueror" opens the app's Add Bean screen with the same link as flow 1. The open backup is never touched; adding beans to a backup stays a manual edit.
 
 ## 1. File formats
 
@@ -89,6 +89,6 @@ Rules:
 2. **Formats**: backup reader and writer, with round-trip tests. (Template and export support was built, then removed to keep to the lossless format.)
 3. **Backup editor**: open, edit and save a backup zip: beans, brews, grinders and methods, filters, forms, the guard on deleting referenced records, and saving unsaved work.
 4. **Share a URL (flow 1)**: bean link encoder, share target for links, service worker redirect; test the redirect on a phone, add the one-button fallback if needed.
-5. **Bean from a URL**: page extraction via Jina + rules (+ AI), used by flow 1's redirect and by flow 4's "Add from link" in the editor.
+5. **Bean from a URL**: page extraction via Jina + rules (+ AI), used by flow 1's redirect and by flow 4's "Add from link" screen.
 6. **Merge**: add another backup's records into the open one.
 7. **Polish**: empty states, error handling, the translation pass, Lighthouse.
