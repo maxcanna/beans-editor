@@ -16,6 +16,8 @@ const KEY = 'pending-file';
 
 export const SHARE_TARGET_PATH = '/share-target';
 export const SHARED_FILE_PARAM = 'shared-file';
+/** Set when a share arrived with neither a file nor a link to use. */
+export const SHARE_EMPTY_PARAM = 'share-empty';
 
 export async function putSharedFile(file: SharedFile): Promise<void> {
   await set(KEY, file, store());
