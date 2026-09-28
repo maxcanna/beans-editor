@@ -138,6 +138,24 @@ describe('labelledFields', () => {
     });
   });
 
+  it('reads several labels on one line', () => {
+    const line =
+      '**COUNTRY:** Columbia | **REGION:** Acevedo, Huila | **FARM:** Motta | **ALTITUDE:** 1650 masl | **VARIETY:** Red Bourbon | **PROCESSING METHOD:** Washed';
+    expect(labelledFields(line)).toEqual({
+      country: 'Columbia',
+      region: 'Acevedo, Huila',
+      farm: 'Motta',
+      elevation: '1650 masl',
+      variety: 'Red Bourbon',
+      processing: 'Washed',
+    });
+    expect(labelledFields('Country: Kenya Region: Nyeri Process: Washed')).toEqual({
+      country: 'Kenya',
+      region: 'Nyeri',
+      processing: 'Washed',
+    });
+  });
+
   it('reads table rows', () => {
     expect(labelledFields(TABLE_DE)).toMatchObject({
       country: 'Uganda',

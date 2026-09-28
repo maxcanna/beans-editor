@@ -308,6 +308,28 @@ function splitLabelled(line: string): [string, string] | undefined {
   return undefined;
 }
 
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** Any known label followed by a colon, anywhere in a line. */
+const LABEL_RUN = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?:${[...LABEL_TO_FIELD.keys()]
+    .sort((x, y) => y.length - x.length)
+    .map(escapeRegExp)
+    .join('|')})\s*[:：]`,
+  'giu',
+);
+
+/**
+ * Splits a line holding several labels ("COUNTRY: Colombia | REGION: Huila | FARM: Motta")
+ * into one line per label. Table rows are left to `splitLabelled`.
+ */
+function splitRun(line: string): string[] {
+  if (line.trim().startsWith('|')) return [line];
+  const text = plain(line);
+  const starts = [...text.matchAll(LABEL_RUN)].map((match) => match.index);
+  if (starts.length < 2) return [line];
+  return starts.map((start, i) => text.slice(start, starts[i + 1]));
+}
+
 /** Collects `field → value` pairs from labelled lines, and label-only lines followed by a value line. */
 export function labelledFields(text: string): Partial<Record<Field, string>> {
   const found: Partial<Record<Field, string>> = {};
@@ -315,7 +337,7 @@ export function labelledFields(text: string): Partial<Record<Field, string>> {
     const value = cleanValue(raw);
     if (value && found[field] === undefined) found[field] = value;
   };
-  const lines = text.split(/\r?\n/);
+  const lines = text.split(/\r?\n/).flatMap(splitRun);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? '';
     if (!line.trim() || /^\s*\|?\s*:?-{3,}/.test(line)) continue;
