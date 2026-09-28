@@ -16,7 +16,7 @@ const root = protobuf.Root.fromJSON({
         variety: { type: 'string', id: 7 },
         processing: { type: 'string', id: 8 },
         certification: { type: 'string', id: 9 },
-        percentage: { type: 'double', id: 10 },
+        percentage: { type: 'uint32', id: 10 },
       },
     },
     BeanProto: {
@@ -29,8 +29,8 @@ const root = protobuf.Root.fromJSON({
         beanMix: { type: 'uint64', id: 9 },
         roast_custom: { type: 'string', id: 10 },
         aromatics: { type: 'string', id: 11 },
-        weight: { type: 'double', id: 12 },
-        cost: { type: 'double', id: 14 },
+        weight: { type: 'uint64', id: 12 },
+        cost: { type: 'uint64', id: 14 },
         cupping_points: { type: 'string', id: 16 },
         decaffeinated: { type: 'bool', id: 17 },
         url: { type: 'string', id: 18 },
@@ -79,6 +79,8 @@ describe('bean links', () => {
   it('encodes every field with the app’s field numbers and enum values', () => {
     expect(decode(encodeBean(bean))).toEqual({
       ...bean,
+      // BeanProto's cost is a uint64, so the price is rounded.
+      cost: 19,
       roast: 7,
       beanMix: 1,
       bean_roasting_type: 1,

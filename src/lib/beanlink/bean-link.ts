@@ -71,13 +71,20 @@ const ORIGIN_FIELDS = [
   'certification',
 ] as const;
 
+/** BeanProto's numbers are unsigned integers, so fractions (a €18.50 price) are rounded. */
+function wholeNumber(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value) || value < 0) return undefined;
+  return Math.round(value);
+}
+
 function encodeOrigin(origin: SharedOrigin): ProtoWriter {
   const w = new ProtoWriter();
   ORIGIN_FIELDS.forEach((key, i) => {
     const value = origin[key];
     if (value) w.string(i + 1, value);
   });
-  if (origin.percentage !== undefined) w.double(10, origin.percentage);
+  const percentage = wholeNumber(origin.percentage);
+  if (percentage !== undefined) w.uint(10, percentage);
   return w;
 }
 
@@ -87,8 +94,10 @@ export function encodeBean(bean: SharedBean): Uint8Array {
   const str = (field: number, value: string | undefined) => {
     if (value) w.string(field, value);
   };
+  // BeanProto stores weight and cost as uint64: a double there is skipped by the app.
   const num = (field: number, value: number | undefined) => {
-    if (value !== undefined && Number.isFinite(value)) w.double(field, value);
+    const whole = wholeNumber(value);
+    if (whole !== undefined) w.uint(field, whole);
   };
   str(1, bean.name);
   str(3, bean.roastingDate);

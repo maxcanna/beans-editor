@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ExternalLink, LoaderCircle, TriangleAlert, X } from '@lucide/svelte';
+  import { CircleCheck, ExternalLink, LoaderCircle, TriangleAlert, X } from '@lucide/svelte';
   import { Dialog } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { beanLink, findSharedUrl, nameFromUrl, type SharedBean } from '../beanlink/bean-link';
@@ -90,6 +90,25 @@
     return bean;
   }
 
+  /** What happened after "Open in Beanconqueror": the page is hidden when the app takes over. */
+  let opening = $state<'waiting' | 'opened' | 'not-opened' | null>(null);
+  let openTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function onOpen() {
+    clearTimeout(openTimer);
+    opening = 'waiting';
+    openTimer = setTimeout(() => {
+      if (opening === 'waiting') opening = 'not-opened';
+    }, 3000);
+  }
+
+  function onVisibilityChange() {
+    if (document.visibilityState === 'hidden' && opening === 'waiting') {
+      clearTimeout(openTimer);
+      opening = 'opened';
+    }
+  }
+
   const link = $derived(form && form.name.trim() ? beanLink(toBean(form)) : undefined);
 
   async function read(text = input) {
@@ -146,6 +165,7 @@
 </script>
 
 <svelte:window onoffline={() => (online = false)} ononline={() => (online = true)} />
+<svelte:document onvisibilitychange={onVisibilityChange} />
 
 <Dialog.Root open onOpenChange={(open) => !open && (controller?.abort(), onclose())}>
   <Dialog.Portal>
@@ -293,18 +313,37 @@
         <footer
           class="flex flex-wrap items-center justify-end gap-2 border-t border-border px-3 py-3 sm:px-5 sm:py-4"
         >
+          <p role="status" class={['basis-full text-sm', !opening && 'hidden']} data-testid="open-status">
+            {#if opening === 'waiting'}
+              <span class="inline-flex items-center gap-2 text-muted">
+                <LoaderCircle class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                {m.link_opening()}
+              </span>
+            {:else if opening === 'opened'}
+              <span class="inline-flex items-center gap-2">
+                <CircleCheck class="size-4 text-accent" aria-hidden="true" />
+                {m.link_opened()}
+              </span>
+            {:else if opening === 'not-opened'}
+              <span class="inline-flex items-start gap-2 text-danger">
+                <TriangleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                {m.link_not_opened()}
+              </span>
+            {/if}
+          </p>
           <button
             type="button"
             class="{buttonClass} hover:bg-border/40"
             onclick={() => {
               step = 'link';
               form = null;
+              opening = null;
             }}
           >
             {m.link_back()}
           </button>
           {#if link}
-            <a class={primaryButtonClass} href={link} data-testid="open-in-beanconqueror">
+            <a class={primaryButtonClass} href={link} onclick={onOpen} data-testid="open-in-beanconqueror">
               <ExternalLink class="size-4" aria-hidden="true" />
               {m.link_open()}
             </a>
