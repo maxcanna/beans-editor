@@ -169,7 +169,7 @@ test('offers to download stored work that no longer passes the check', async ({ 
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open('bean-editor');
+        const request = indexedDB.open('beans-editor');
         request.onupgradeneeded = () => request.result.createObjectStore('drafts');
         request.onsuccess = () => {
           const tx = request.result.transaction('drafts', 'readwrite');
