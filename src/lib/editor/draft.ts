@@ -45,7 +45,7 @@ export interface DraftStore {
 const KEY = 'draft';
 
 export function idbDraftStore(): DraftStore {
-  const store = createStore('bean-editor', 'drafts');
+  const store = createStore('beans-editor', 'drafts');
   return {
     get: (key) => get(key, store),
     set: (key, value) => set(key, value, store),

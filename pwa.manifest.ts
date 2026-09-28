@@ -2,8 +2,8 @@ import type { ManifestOptions } from 'vite-plugin-pwa';
 
 export const manifest: Partial<ManifestOptions> = {
   id: '/',
-  name: 'Bean Editor',
-  short_name: 'Bean Editor',
+  name: 'Beans Editor',
+  short_name: 'Beans Editor',
   description: 'Edit Beanconqueror backups offline, in your browser.',
   start_url: '/',
   scope: '/',
@@ -11,8 +11,11 @@ export const manifest: Partial<ManifestOptions> = {
   theme_color: '#1c1917',
   background_color: '#1c1917',
   icons: [
-    { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-    { src: '/icons/icon-maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+    { src: '/favicon.ico', sizes: '16x16 32x32', type: 'image/x-icon' },
+    { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    { src: '/icons/icon-192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+    { src: '/icons/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
   ],
   share_target: {
     action: '/share-target',

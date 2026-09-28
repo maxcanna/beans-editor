@@ -11,7 +11,7 @@ export interface SharedFile {
   receivedAt: number;
 }
 
-const store = () => createStore('bean-editor-share', 'inbox');
+const store = () => createStore('beans-editor-share', 'inbox');
 const KEY = 'pending-file';
 
 export const SHARE_TARGET_PATH = '/share-target';

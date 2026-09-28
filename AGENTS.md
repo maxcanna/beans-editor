@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for coding agents (and humans) working on Bean Editor. The product spec is in [docs/spec.md](docs/spec.md); read it before changing behaviour.
+Guidance for coding agents (and humans) working on Beans Editor. The product spec is in [docs/spec.md](docs/spec.md); read it before changing behaviour.
 
 ## What this is
 
