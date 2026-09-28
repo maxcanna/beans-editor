@@ -42,11 +42,11 @@
   >
     {m.open_file()}
   </button>
-  <p class="text-sm text-muted">{m.drop_hint()}</p>
+  <p class="text-sm text-balance text-muted">{m.drop_hint()}</p>
   <input
     bind:this={input}
     type="file"
-    accept=".zip,application/zip"
+    accept=".zip,application/zip,application/x-zip-compressed"
     class="sr-only"
     tabindex="-1"
     aria-hidden="true"
