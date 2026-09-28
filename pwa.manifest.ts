@@ -29,7 +29,8 @@ export const manifest: Partial<ManifestOptions> = {
       files: [
         {
           name: 'file',
-          accept: ['application/zip', 'application/x-zip-compressed', '.zip'],
+          // Android often labels a zip as a generic binary file; the app checks contents anyway.
+          accept: ['application/zip', 'application/x-zip-compressed', 'application/octet-stream', '.zip'],
         },
       ],
     },
