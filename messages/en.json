@@ -22,8 +22,6 @@
   "editor_unsaved": "Unsaved changes",
   "editor_saved": "All changes downloaded",
   "editor_download": "Download backup",
-  "editor_share": "Share",
-  "editor_share_failed": "This browser can't share zip files. Use Download backup instead.",
   "editor_close": "Close backup",
   "editor_count_beans": "Beans: {count}",
   "editor_count_brews": "Brews: {count}",

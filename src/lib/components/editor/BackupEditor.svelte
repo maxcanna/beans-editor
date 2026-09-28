@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { CircleCheck, Download, FileArchive, Share2, X } from '@lucide/svelte';
+  import { CircleCheck, Download, FileArchive, X } from '@lucide/svelte';
   import { Tabs } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { writeBackup, type BackupRecord } from '../../formats/backup/backup';
   import { newBean } from '../../editor/beans';
   import { nameIndex } from '../../editor/brews';
   import { newMill } from '../../editor/gear';
-  import { canShareFiles, download, outputName, share } from '../../editor/output';
+  import { download, outputName } from '../../editor/output';
   import {
     addRecord,
     brewsUsing,
@@ -55,8 +55,6 @@
   let tab = $state<Editable>('BEANS');
   let addingFromLink = $state(false);
   const loadAddFromLink = () => import('../AddFromLink.svelte');
-  let shareable = $state(canShareFiles());
-  let shareFailed = $state(false);
 
   const options = (key: 'BEANS' | 'MILL' | 'PREPARATION') =>
     records(data, key)
@@ -102,16 +100,6 @@
     session.markSaved();
   }
 
-  async function shareBackup() {
-    try {
-      if (await share(bytes(), outputName(session.fileName))) session.markSaved();
-    } catch {
-      // The browser refused the file; Download is the way out.
-      shareable = false;
-      shareFailed = true;
-    }
-  }
-
   const action =
     'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 </script>
@@ -142,19 +130,8 @@
           </span>
         {/if}
       </p>
-      {#if shareFailed}
-        <p role="alert" class="mt-1 text-xs text-danger" data-testid="share-failed">
-          {m.editor_share_failed()}
-        </p>
-      {/if}
     </div>
     <div class="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">
-      {#if shareable}
-        <button type="button" class="{action} border border-border hover:bg-border/40" onclick={shareBackup}>
-          <Share2 class="size-4" aria-hidden="true" />
-          {m.editor_share()}
-        </button>
-      {/if}
       <button
         type="button"
         class="{action} bg-accent text-accent-fg hover:bg-accent/90"
