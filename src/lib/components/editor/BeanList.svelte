@@ -4,6 +4,7 @@
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterBeans, localDay } from '../../editor/beans';
   import { label, ROAST_LABELS } from '../../editor/labels';
+  import MetaList from './MetaList.svelte';
 
   interface Props {
     beans: readonly BackupRecord[];
@@ -130,25 +131,22 @@
               <span class="flex-1 font-semibold">{text(bean, 'name')}</span>
               {#if archived(bean)}
                 <span
-                  class="inline-flex items-center gap-1 rounded-full bg-border/50 px-2 py-0.5 text-xs text-muted"
+                  class="inline-flex shrink-0 items-center gap-1 rounded-full bg-border/50 px-2 py-0.5 text-xs whitespace-nowrap text-muted"
                 >
                   <Archive class="size-3" aria-hidden="true" />
                   {m.beans_archived()}
                 </span>
               {/if}
             </span>
-            <span class="text-sm text-muted"
-              >{[text(bean, 'roaster'), date(bean)].filter(Boolean).join(' · ')}</span
-            >
-            <span class="text-sm text-muted">
-              {[
+            <MetaList class="text-sm text-muted" items={[text(bean, 'roaster'), date(bean)]} />
+            <MetaList
+              class="text-sm text-muted"
+              items={[
                 label(ROAST_LABELS, (bean as Record<string, unknown>)['roast']),
                 number(bean, 'weight') && `${number(bean, 'weight')} g`,
                 m.beans_brews({ count: brewCount(bean.config.uuid) }),
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
+              ]}
+            />
           </button>
         </li>
       {/each}
@@ -156,10 +154,10 @@
   {:else}
     <div class="overflow-x-auto rounded-2xl border border-border bg-surface">
       <table class="w-full text-left text-sm" data-testid="bean-grid">
-        <thead class="border-b border-border text-xs text-muted uppercase">
+        <thead class="border-b border-border text-xs whitespace-nowrap text-muted uppercase">
           <tr>
-            <th scope="col" class="px-4 py-3 font-medium">{m.bean_name()}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{m.bean_roaster()}</th>
+            <th scope="col" class="min-w-44 px-4 py-3 font-medium">{m.bean_name()}</th>
+            <th scope="col" class="min-w-36 px-4 py-3 font-medium">{m.bean_roaster()}</th>
             <th scope="col" class="px-4 py-3 font-medium">{m.bean_roast_date()}</th>
             <th scope="col" class="px-4 py-3 font-medium">{m.bean_roast()}</th>
             <th scope="col" class="px-4 py-3 text-right font-medium">{m.bean_weight()}</th>
@@ -178,14 +176,18 @@
                   {text(bean, 'name')}
                 </button>
                 {#if archived(bean)}
-                  <span class="ml-2 rounded-full bg-border/50 px-2 py-0.5 text-xs font-normal text-muted">
+                  <span
+                    class="ml-2 rounded-full bg-border/50 px-2 py-0.5 text-xs font-normal whitespace-nowrap text-muted"
+                  >
                     {m.beans_archived()}
                   </span>
                 {/if}
               </th>
               <td class="px-4 py-2">{text(bean, 'roaster')}</td>
               <td class="px-4 py-2 whitespace-nowrap">{date(bean)}</td>
-              <td class="px-4 py-2">{label(ROAST_LABELS, (bean as Record<string, unknown>)['roast'])}</td>
+              <td class="px-4 py-2 whitespace-nowrap"
+                >{label(ROAST_LABELS, (bean as Record<string, unknown>)['roast'])}</td
+              >
               <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'weight') ?? ''}</td>
               <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'rating') ?? ''}</td>
             </tr>

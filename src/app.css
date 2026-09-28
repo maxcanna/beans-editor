@@ -31,6 +31,6 @@
     color-scheme: light dark;
   }
   body {
-    @apply bg-bg font-sans text-fg antialiased;
+    @apply bg-bg font-sans text-pretty text-fg antialiased;
   }
 }
