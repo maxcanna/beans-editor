@@ -42,7 +42,7 @@
   >
     {m.open_file()}
   </button>
-  <p class="text-sm text-muted">{m.drop_hint()}</p>
+  <p class="text-sm text-balance text-muted">{m.drop_hint()}</p>
   <input
     bind:this={input}
     type="file"
