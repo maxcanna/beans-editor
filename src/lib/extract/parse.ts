@@ -368,15 +368,12 @@ export function labelledFields(text: string): Partial<Record<Field, string>> {
 /** Grams from a text like "250g", "250 gr", "1 kg", "1,5kg"; bag sizes only. */
 export function parseWeight(text: string | undefined): number | undefined {
   if (!text) return undefined;
-  const kg = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kg|kilo)\b/i);
-  if (kg) {
-    const grams = Math.round(parseFloat((kg[1] ?? '').replace(',', '.')) * 1000);
-    if (grams >= 100 && grams <= 5000) return grams;
-  }
-  const g = text.match(/(\d{2,4})\s*(?:g|gr|grams?|grammi|gramm|gramos|grammes)\b/i);
-  if (g) {
-    const grams = Number(g[1]);
-    if (grams >= 50 && grams <= 5000) return grams;
+  // The first size mentioned wins, so "200g / 1kg" is the 200 g bag.
+  const sizes = text.matchAll(/(\d+(?:[.,]\d+)?)\s*(kg|kilo|g|gr|grams?|grammi|gramm|gramos|grammes)\b/gi);
+  for (const [, amount = '', unit = ''] of sizes) {
+    const value = parseFloat(amount.replace(',', '.'));
+    const grams = /^k/i.test(unit) ? Math.round(value * 1000) : value;
+    if (Number.isInteger(grams) && grams >= 50 && grams <= 5000) return grams;
   }
   return undefined;
 }
