@@ -28,6 +28,16 @@ If Chromium is preinstalled somewhere instead of via `yarn playwright install`, 
 
 Every change must pass `yarn validate` and `yarn test:e2e` before it is pushed. Add or update tests with the change: unit tests for parsing, writing and state; e2e tests for user flows. Never skip, disable or loosen a test to get green.
 
+## Versioning
+
+Every PR must raise `version` in `package.json` above the base branch's; CI's `version` job fails otherwise. Bump it yourself in the PR, picking the [semantic version](https://semver.org) bump that matches what the PR introduces:
+
+- **Major**: a breaking change for users, such as dropping a supported backup layout or changing how shared links or files are handled in an incompatible way.
+- **Minor**: a new user-facing feature or capability that stays backwards compatible.
+- **Patch**: bug fixes, refactors, dependency updates, docs, tests and CI changes with no new user-facing behaviour.
+
+While the version is `0.x`, a breaking change bumps the minor version instead of the major. Bump once per PR, relative to the base branch, not once per commit.
+
 ## Architecture
 
 - **Svelte 5 with runes** (`$state`, `$derived`, `$props`), TypeScript strict, Vite. No SvelteKit; one page.

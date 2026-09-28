@@ -13,6 +13,40 @@ permissions:
   contents: read
 
 jobs:
+  fixups:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check if there are fixup commits
+        run: |
+          if git log --pretty=format:%s origin/${{ github.base_ref }}.. | grep -E '^(fixup|squash|amend)! '; then
+            echo "Error: squash the fixup commits above before merging."
+            exit 1
+          fi
+
+  version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check version bump
+        run: |
+          OLD_VERSION=$(git show origin/${{ github.base_ref }}:package.json | jq -r .version)
+          NEW_VERSION=$(jq -r .version package.json)
+          if [ "$(printf '%s\n' "$OLD_VERSION" "$NEW_VERSION" | sort -V | head -n1)" = "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+            echo "Version increased from $OLD_VERSION to $NEW_VERSION."
+          else
+            echo "Error: Version must be greater than $OLD_VERSION, but it is $NEW_VERSION."
+            exit 1
+          fi
+
   lint:
     runs-on: ubuntu-latest
     steps:
