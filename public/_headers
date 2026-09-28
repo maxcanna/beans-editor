@@ -1,17 +1,29 @@
+# Cloudflare static assets headers. Rules are matched against the request path and merged;
+# "! Header" drops a value set by an earlier rule, so the more specific rules below replace
+# the default Cache-Control instead of joining it.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://r.jina.ai; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-
-/index.html
+  # HTML (at / and every single-page fallback route), sw.js and the manifest: always
+  # revalidate, so a deploy is picked up on the next load. Unchanged files answer 304 via ETag.
   Cache-Control: no-cache
 
-/sw.js
-  Cache-Control: no-cache
-
-/manifest.webmanifest
-  Cache-Control: no-cache
-
+# Vite's content-hashed JS, CSS and fonts never change under the same name.
 /assets/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
+
+# Icons keep their names across releases: cache them for a day, then revalidate.
+/icons/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/favicon.ico
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/apple-touch-icon.png
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
