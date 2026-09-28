@@ -13,4 +13,7 @@
   // Keep *.workers.dev so branch preview URLs keep working.
   "workers_dev": true,
   "preview_urls": true,
+  // Required by `wrangler preview`, which Workers Builds runs for non-production branches.
+  // Empty: there are no bindings or vars, so Previews need no settings of their own.
+  "previews": {},
 }
