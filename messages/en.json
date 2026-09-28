@@ -182,5 +182,8 @@
   "link_review": "Check what was found and fix anything that's wrong. Empty fields weren't on the page.",
   "link_back": "Back",
   "link_open": "Open in Beanconqueror",
-  "link_backup_untouched": "Your backup isn't changed."
+  "link_backup_untouched": "Your backup isn't changed.",
+  "link_opening": "Opening Beanconqueror…",
+  "link_opened": "Sent to Beanconqueror. Check the bean there and tap Save to add it.",
+  "link_not_opened": "Beanconqueror didn't open. Make sure it's installed on this device, then try again."
 }
