@@ -186,7 +186,7 @@ test('offers to download stored work that no longer passes the check', async ({ 
     page.waitForEvent('download'),
     banner.getByRole('button', { name: 'Download what was saved' }).click(),
   ]);
-  expect(download.suggestedFilename()).toBe('bean-editor-unsaved-work.json');
+  expect(download.suggestedFilename()).toBe('beans-editor-unsaved-work.json');
   await banner.getByRole('button', { name: 'Start fresh' }).click();
   await expect(banner).toBeHidden();
   await page.reload();

@@ -48,7 +48,7 @@ test.describe('offline', () => {
     await context.setOffline(true);
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Bean Editor' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Beans Editor' })).toBeVisible();
     await page.getByTestId('file-input').setInputFiles({
       name: 'Beanconqueror.zip',
       mimeType: 'application/zip',

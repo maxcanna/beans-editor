@@ -1,6 +1,6 @@
-# Bean Editor
+# Beans Editor
 
-Edit [Beanconqueror](https://beanconqueror.com) backups (`.zip`) right in your browser. The backup is the only Beanconqueror file that holds everything, so it's the only one Bean Editor reads and writes: nothing is lost on the way back into the app. There's no backend, the app works offline once installed, and your files never leave your device.
+Edit [Beanconqueror](https://beanconqueror.com) backups (`.zip`) right in your browser. The backup is the only Beanconqueror file that holds everything, so it's the only one Beans Editor reads and writes: nothing is lost on the way back into the app. There's no backend, the app works offline once installed, and your files never leave your device.
 
 ## Features
 
@@ -8,8 +8,8 @@ Edit [Beanconqueror](https://beanconqueror.com) backups (`.zip`) right in your b
 - Records you don't touch are written back exactly as they were.
 - Unsaved work is kept in the browser, so a reload or a closed tab loses nothing.
 - Installable PWA that works fully offline.
-- On Android, share a backup from any app to Bean Editor to open it straight away.
-- Share a roaster's product page to Bean Editor and Beanconqueror opens its Add Bean screen, already filled in. No backup needed. For now it fills in the name (from the link) and the link itself.
+- On Android, share a backup from any app to Beans Editor to open it straight away.
+- Share a roaster's product page to Beans Editor and Beanconqueror opens its Add Bean screen, already filled in. No backup needed. For now it fills in the name (from the link) and the link itself.
 - Light and dark themes that follow your system.
 
 ## Getting started
@@ -37,7 +37,7 @@ yarn build && yarn preview
 
 ## Deploying
 
-Bean Editor is a static site, deployed to Cloudflare Workers as static assets (see `wrangler.jsonc`). Connect the repository with Cloudflare's Git integration (Workers Builds):
+Beans Editor is a static site, deployed to Cloudflare Workers as static assets (see `wrangler.jsonc`). Connect the repository with Cloudflare's Git integration (Workers Builds):
 
 - **Build command:** `yarn build`
 - **Deploy command:** `yarn wrangler deploy`
@@ -51,4 +51,4 @@ See [AGENTS.md](AGENTS.md) for architecture, conventions and the definition of d
 
 ## License
 
-[MIT](LICENSE). Bean Editor is an independent project and is not affiliated with Beanconqueror.
+[MIT](LICENSE). Beans Editor is an independent project and is not affiliated with Beanconqueror.
