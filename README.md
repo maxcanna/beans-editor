@@ -43,6 +43,16 @@ Beans Editor is a static site, deployed to Cloudflare Workers as static assets (
 - **Deploy command:** `yarn wrangler deploy`
 - Pushes to `main` deploy to production; other branches get preview URLs on `workers.dev`.
 
+### Caching
+
+Cloudflare serves the static assets from its edge network, with the `Cache-Control` headers set in `public/_headers`:
+
+- `/assets/*` (content-hashed JS, CSS and fonts): cached for a year, `immutable`.
+- Icons: cached for a day, then revalidated.
+- HTML (every route), `sw.js` and `manifest.webmanifest`: `no-cache`, so browsers revalidate on each load and get a `304` via `ETag` when nothing changed.
+
+A deploy needs no cache purge: `wrangler deploy` switches every Cloudflare location to the new asset set at once, and the hashed file names change whenever their content does. Workers Caching (`cache.enabled`) stays off on purpose: it would bill every asset request, which is otherwise free, and the assets are already served from the edge.
+
 To serve it on your own hostname, add a custom domain in the Cloudflare dashboard (Worker › Settings › Domains & Routes). The repository doesn't name one, so deploys never change it.
 
 ## Contributing
