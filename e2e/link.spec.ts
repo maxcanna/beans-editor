@@ -97,7 +97,7 @@ test('offers Add from link next to Add bean without changing the backup', async 
   await expect(page.getByTestId('save-state')).toContainText('All changes downloaded');
 });
 
-test('hides Share in Chromium, which refuses to share zip files', async ({ page }) => {
+test('offers Download and no Share, which browsers refuse for zip files', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('file-input').setInputFiles({
     name: 'Beanconqueror.zip',

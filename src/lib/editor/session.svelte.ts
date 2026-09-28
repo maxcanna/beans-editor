@@ -48,7 +48,7 @@ export class EditorSession {
     void this.flush();
   }
 
-  /** Call after the backup was downloaded or shared. */
+  /** Call after the backup was downloaded. */
   markSaved() {
     this.dirty = false;
     void this.flush();

@@ -7,7 +7,7 @@ A backend-free Progressive Web App (PWA) that edits Beanconqueror backups and ad
 
 1. **Share a URL** (Android share sheet → Beans Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Beans Editor UI shows. The backup is never touched.
 2. **Share a zip**: the file's contents are checked; a valid backup opens in the editor, anything else gets a message saying how to export a backup from the app.
-3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download or share it back.
+3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download it.
 4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown for review, then "Open in Beanconqueror" opens the app's Add Bean screen with the same link as flow 1. The open backup is never touched; adding beans to a backup stays a manual edit.
 
 ## 1. File formats
@@ -35,7 +35,7 @@ Rules:
 - **Views**: a cards/grid toggle. Phones start in cards and desktops in the grid, and the app remembers the choice. Both views are virtualized, so thousands of brews stay smooth.
 - **Filters**: text search, show or hide archived, and per-type filters (roaster, bean, method, grinder, date range). The grid also sorts.
 - **Validation**: each field is checked as you type, and a summary of problems is shown before export.
-- **Output**: Download, plus Share through the Web Share API where the browser allows zip files (Safari does; Chromium browsers, including Chrome on Android, only share images, media, PDF and text, so Share is hidden there). No cloud API keys.
+- **Output**: Download only. There is no Share button: Chromium's Web Share, including Chrome on Android, refuses zip files (it only shares images, media, PDF and text). No cloud API keys.
 - **Bean from a URL** (flows 1 and 4): Jina Reader fetches the page (it's the CORS bridge), Shopify product pages also get the shop's product JSON, and rules pull out labelled lines (country, altitude, process…) in English, Italian, German, French, Spanish and Portuguese (`src/lib/extract`). There is no AI pass for now; what isn't found stays blank on the review form. It needs the network, so it's disabled offline; flow 1 then falls back to a bean named after the link.
 
 ## 3. Offline, service worker, share target
