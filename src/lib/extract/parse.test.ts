@@ -78,6 +78,8 @@ describe('parseWeight', () => {
     expect(parseWeight('Peso netto 250 gr')).toBe(250);
     expect(parseWeight('1 kg')).toBe(1000);
     expect(parseWeight('1,5kg bag')).toBe(1500);
+    expect(parseWeight('Size: 200g, 1kg')).toBe(200);
+    expect(parseWeight('1kg / 250g')).toBe(1000);
   });
 
   it('ignores numbers that are not bag sizes', () => {
