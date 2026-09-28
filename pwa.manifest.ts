@@ -8,8 +8,8 @@ export const manifest: Partial<ManifestOptions> = {
   start_url: '/',
   scope: '/',
   display: 'standalone',
-  theme_color: '#1c1917',
-  background_color: '#1c1917',
+  theme_color: '#8F5B40',
+  background_color: '#8F5B40',
   icons: [
     { src: '/favicon.ico', sizes: '16x16 32x32', type: 'image/x-icon' },
     { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
