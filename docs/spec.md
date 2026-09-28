@@ -1,11 +1,11 @@
-# Bean Editor: spec v1
+# Beans Editor: spec v1
 
-Repository: `maxcanna/bean-editor` (private). Hosting: Cloudflare (static assets, free tier).
+Repository: `maxcanna/beans-editor` (private). Hosting: Cloudflare (static assets, free tier).
 A backend-free Progressive Web App (PWA) that edits Beanconqueror backups and adds beans to Beanconqueror from a roaster's product page. Everything runs in the browser, and the app works fully offline after the first visit (reading a product page needs the network).
 
 ## 0. Flows
 
-1. **Share a URL** (Android share sheet → Bean Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Bean Editor UI shows. The backup is never touched.
+1. **Share a URL** (Android share sheet → Beans Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Beans Editor UI shows. The backup is never touched.
 2. **Share a zip**: the file's contents are checked; a valid backup opens in the editor, anything else gets a message saying how to export a backup from the app.
 3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download or share it back.
 4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown for review, then "Open in Beanconqueror" opens the app's Add Bean screen with the same link as flow 1. The open backup is never touched; adding beans to a backup stays a manual edit.
