@@ -22,7 +22,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check if there are fixup commits
-        run: git log --pretty=format:%s origin/${{ github.base_ref }}.. | xargs | grep -v fixup
+        run: |
+          if git log --pretty=format:%s origin/${{ github.base_ref }}.. | grep -E '^(fixup|squash|amend)! '; then
+            echo "Error: squash the fixup commits above before merging."
+            exit 1
+          fi
 
   version:
     if: github.event_name == 'pull_request'
