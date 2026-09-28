@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Archive, LayoutGrid, Plus, Search, Table } from '@lucide/svelte';
+  import { Archive, LayoutGrid, Link, Plus, Search, Table } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterBeans, localDay } from '../../editor/beans';
@@ -11,9 +11,11 @@
     brewCount: (uuid: string) => number;
     onopen: (uuid: string) => void;
     onadd: () => void;
+    /** Opens "Add a bean from a link", which hands the bean to Beanconqueror. */
+    onaddlink: () => void;
   }
 
-  let { beans, brewCount, onopen, onadd }: Props = $props();
+  let { beans, brewCount, onopen, onadd, onaddlink }: Props = $props();
 
   type View = 'cards' | 'grid';
   const VIEW_KEY = 'beans-editor:beans-view';
@@ -64,6 +66,14 @@
   <div class="flex flex-wrap items-center gap-3">
     <h2 id="beans-heading" class="text-lg font-semibold">{m.beans_title()}</h2>
     <span class="flex-1"></span>
+    <button
+      type="button"
+      class="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      onclick={onaddlink}
+    >
+      <Link class="size-4" aria-hidden="true" />
+      {m.beans_add_link()}
+    </button>
     <button
       type="button"
       class="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:bg-accent/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

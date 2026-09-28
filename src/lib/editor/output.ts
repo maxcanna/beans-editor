@@ -16,8 +16,23 @@ export function download(bytes: Uint8Array, fileName: string, type = ZIP_TYPE) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+interface UserAgentData {
+  brands?: { brand: string }[];
+}
+
+/**
+ * Chromium browsers (Chrome, Edge, Samsung Internet…) only share images, audio, video,
+ * PDF and text files, and reject a zip in `share()` even though `canShare()` accepts it
+ * (IsDangerousFilename in chrome/browser/webshare/share_service_impl.cc).
+ */
+function isChromium(): boolean {
+  const data = (navigator as Navigator & { userAgentData?: UserAgentData }).userAgentData;
+  if (data?.brands) return data.brands.some((b) => b.brand === 'Chromium');
+  return /\bChrom(e|ium)\//.test(navigator.userAgent);
+}
+
 export function canShareFiles(): boolean {
-  if (typeof navigator.canShare !== 'function') return false;
+  if (typeof navigator.canShare !== 'function' || isChromium()) return false;
   return navigator.canShare({ files: [new File([], 'x.zip', { type: ZIP_TYPE })] });
 }
 

@@ -13,6 +13,9 @@
   const loadBackup = () => import('./lib/formats/backup/backup');
   const loadEditor = () => import('./lib/components/editor/BackupEditor.svelte');
   const loadOutput = () => import('./lib/editor/output');
+  const loadAddFromLink = () => import('./lib/components/AddFromLink.svelte');
+
+  let addingFromLink = $state(false);
 
   const session = new EditorSession();
 
@@ -143,6 +146,15 @@
 
       <DropZone onfile={async (file) => open(await readLocalFile(file))} />
 
+      <button
+        type="button"
+        class="inline-flex items-center justify-center gap-2 self-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        onclick={() => (addingFromLink = true)}
+      >
+        <Link class="size-4 text-accent" aria-hidden="true" />
+        {m.link_start()}
+      </button>
+
       <section aria-labelledby="howto-title" class="flex flex-col gap-4" data-testid="howto">
         <h2 id="howto-title" class="font-semibold">{m.howto_title()}</h2>
         <ul class="grid gap-3 sm:grid-cols-3">
@@ -200,5 +212,11 @@
     </AlertDialog.Content>
   </AlertDialog.Portal>
 </AlertDialog.Root>
+
+{#if addingFromLink}
+  {#await loadAddFromLink() then { default: AddFromLink }}
+    <AddFromLink onclose={() => (addingFromLink = false)} />
+  {/await}
+{/if}
 
 <UpdateBanner />
