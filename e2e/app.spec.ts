@@ -15,6 +15,22 @@ test('opens a backup from the file picker into the editor', async ({ page }) => 
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
 });
 
+test('explains the three ways to use the app and links to the source', async ({ page }) => {
+  await page.goto('/');
+  const howto = page.getByTestId('howto');
+  for (const step of [
+    'Share a backup from Beanconqueror',
+    'Open a backup file',
+    'Add a bean from a shop page',
+  ]) {
+    await expect(howto.getByRole('heading', { name: step })).toBeVisible();
+  }
+  await expect(page.getByRole('link', { name: 'Open source on GitHub' })).toHaveAttribute(
+    'href',
+    'https://github.com/maxcanna/beans-editor',
+  );
+});
+
 test('keeps each file count on one line on a narrow phone', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto('/');
@@ -84,6 +100,15 @@ test.describe('offline', () => {
     await expect(page.getByTestId('backup-editor')).toBeVisible();
     await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
     // The share parameter is consumed, so a reload does not re-open the file.
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test('says so when a share arrives with nothing to open', async ({ page }) => {
+    await page.goto('/');
+    await waitForServiceWorker(page);
+
+    await shareText(page, { title: 'Backup', text: 'no link here' });
+    await expect(page.getByRole('alert')).toContainText('Nothing to open came through the share');
     await expect(page).toHaveURL(/\/$/);
   });
 

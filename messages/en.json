@@ -4,7 +4,16 @@
   "app_tagline": "Edit your Beanconqueror backup right in your browser: beans, brews, grinders and methods.",
   "open_file": "Open file",
   "drop_hint": "or drop a Beanconqueror backup (.zip) here",
+  "howto_title": "How to use it",
+  "howto_share_title": "Share a backup from Beanconqueror",
+  "howto_share_body": "In Beanconqueror, go to Settings, Transfer data and choose Export, then share the zip with Beans Editor. Install Beans Editor first (Add to Home screen) so it shows up in the share menu.",
+  "howto_open_title": "Open a backup file",
+  "howto_open_body": "Export a backup from Beanconqueror and save it, then tap Open file above or drop the zip on this page.",
+  "howto_link_title": "Add a bean from a shop page",
+  "howto_link_body": "On the roaster's product page, share the link with Beans Editor. Beanconqueror opens its Add Bean screen, filled in and ready to save.",
+  "howto_finish": "When you finish editing, download the backup and import it in Beanconqueror from Settings, Transfer data, Import.",
   "privacy_note": "Files never leave your device.",
+  "source_link": "Open source on GitHub",
   "loading": "Loading…",
   "error_read": "Couldn't read this file.",
   "update_available": "A new version is available.",
@@ -155,5 +164,6 @@
   "gear_note": "Notes",
   "gear_delete_blocked": "This can't be deleted because brews use it (brews: {count}). Archive it instead to hide it from lists.",
   "gear_delete_confirm": "Delete this? This can't be undone once you download the backup.",
-  "not_a_backup": "This isn't a Beanconqueror backup. In the app, go to Settings, Transfer data and choose Export to get one."
+  "not_a_backup": "This isn't a Beanconqueror backup. In the app, go to Settings, Transfer data and choose Export to get one.",
+  "share_empty": "Nothing to open came through the share. Share the backup zip itself, from Beanconqueror (Settings, Transfer data, Export) or from a file manager."
 }

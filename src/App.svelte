@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Coffee, TriangleAlert } from '@lucide/svelte';
+  import { Coffee, FolderOpen, Link, Share2, TriangleAlert } from '@lucide/svelte';
   import { AlertDialog } from 'bits-ui';
   import { onMount } from 'svelte';
   import { m } from '$paraglide/messages';
@@ -57,6 +57,7 @@
       if (restored.status === 'invalid') invalidDraft = { raw: restored.raw };
       const incoming = await consumeShare(window.location, window.history);
       if (incoming.type === 'file') await open(incoming.file);
+      if (incoming.type === 'empty') openError = m.share_empty();
     })();
 
     // Write pending edits right away when the page is hidden or closed.
@@ -70,6 +71,14 @@
       window.removeEventListener('pagehide', flush);
     };
   });
+
+  const SOURCE_URL = 'https://github.com/maxcanna/beans-editor';
+
+  const howto = [
+    { icon: Share2, title: m.howto_share_title(), body: m.howto_share_body() },
+    { icon: FolderOpen, title: m.howto_open_title(), body: m.howto_open_body() },
+    { icon: Link, title: m.howto_link_title(), body: m.howto_link_body() },
+  ];
 
   const banner = 'flex flex-wrap items-center gap-3 rounded-2xl border p-4 text-sm';
   const bannerButton =
@@ -130,12 +139,35 @@
         </p>
       {/await}
     {:else}
-      <p class="text-lg text-balance text-muted">{m.app_tagline()}</p>
+      <p class="text-lg text-muted">{m.app_tagline()}</p>
 
       <DropZone onfile={async (file) => open(await readLocalFile(file))} />
+
+      <section aria-labelledby="howto-title" class="flex flex-col gap-4" data-testid="howto">
+        <h2 id="howto-title" class="font-semibold">{m.howto_title()}</h2>
+        <ul class="grid gap-3 sm:grid-cols-3">
+          {#each howto as step (step.title)}
+            <li class="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+              <step.icon class="size-5 text-accent" aria-hidden="true" />
+              <h3 class="text-sm font-semibold">{step.title}</h3>
+              <p class="text-sm text-muted">{step.body}</p>
+            </li>
+          {/each}
+        </ul>
+        <p class="text-sm text-muted">{m.howto_finish()}</p>
+      </section>
     {/if}
 
-    <p class="mt-auto pt-10 text-center text-xs text-muted">{m.privacy_note()}</p>
+    <p class="mt-auto pt-10 text-center text-xs text-muted">
+      {m.privacy_note()}
+      <a
+        href={SOURCE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="ml-1 underline hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
+        >{m.source_link()}</a
+      >
+    </p>
   </main>
 </div>
 
