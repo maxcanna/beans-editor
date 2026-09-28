@@ -22,6 +22,7 @@
   import BrewList from './BrewList.svelte';
   import GearDialog from './GearDialog.svelte';
   import GearList from './GearList.svelte';
+  import MetaList from './MetaList.svelte';
 
   interface Props {
     session: EditorSession;
@@ -111,14 +112,15 @@
     <FileArchive class="size-8 shrink-0 text-accent" aria-hidden="true" />
     <div class="min-w-0 flex-1 basis-56">
       <h2 class="truncate font-semibold">{session.fileName}</h2>
-      <p class="text-sm text-muted">
-        {m.editor_counts({
-          beans: beans.length,
-          brews: count('BREWS'),
-          grinders: count('MILL'),
-          methods: count('PREPARATION'),
-        })}
-      </p>
+      <MetaList
+        class="text-sm text-muted"
+        items={[
+          m.editor_count_beans({ count: beans.length }),
+          m.editor_count_brews({ count: count('BREWS') }),
+          m.editor_count_grinders({ count: count('MILL') }),
+          m.editor_count_methods({ count: count('PREPARATION') }),
+        ]}
+      />
       <p class="mt-1 text-xs" aria-live="polite" data-testid="save-state">
         {#if session.storageFailed}
           <span role="alert" class="font-medium text-danger">{m.editor_storage_failed()}</span>
