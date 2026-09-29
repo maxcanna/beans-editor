@@ -6,9 +6,7 @@
   import DropZone from './lib/components/DropZone.svelte';
   import UpdateBanner from './lib/components/UpdateBanner.svelte';
   import { EditorSession } from './lib/editor/session.svelte';
-  import { findSharedUrl } from './lib/beanlink/bean-link';
   import { consumeShare, readLocalFile, type IncomingFile } from './lib/files/incoming';
-  import { SHARED_LINK_PARAM } from './lib/share/inbox';
 
   // Heavy code (zip parsing, the editor) is split into lazy chunks; the
   // service worker still precaches them, so this only speeds up startup.
@@ -16,7 +14,6 @@
   const loadEditor = () => import('./lib/components/editor/BackupEditor.svelte');
   const loadOutput = () => import('./lib/editor/output');
   const loadAddFromLink = () => import('./lib/components/AddFromLink.svelte');
-  const loadSharedLink = () => import('./lib/components/SharedLink.svelte');
 
   let addingFromLink = $state(false);
   /** A product page shared from another app, on its way to Beanconqueror. */
@@ -59,10 +56,6 @@
   }
 
   onMount(() => {
-    // Read before the draft restore, so a shared link shows its progress right away.
-    const params = new URLSearchParams(window.location.search);
-    const linkParam = params.get(SHARED_LINK_PARAM);
-    if (linkParam) sharedLink = findSharedUrl(linkParam) ?? null;
     void (async () => {
       const restored = await session.restore();
       if (restored.status === 'ok') notice = 'restored';
@@ -131,24 +124,7 @@
       </p>
     {/if}
 
-    {#if sharedLink}
-      {@const host = sharedLink.hostname.replace(/^www\./, '')}
-      {#await loadSharedLink()}
-        <p
-          role="status"
-          class="rounded-2xl border border-border bg-surface p-5 text-sm font-medium"
-          data-testid="shared-link-loading"
-        >
-          {m.link_reading({ host })}
-        </p>
-      {:then { default: SharedLink }}
-        <SharedLink url={sharedLink} ondone={() => (sharedLink = null)} />
-      {:catch}
-        <p role="alert" class="rounded-2xl border border-danger/40 bg-danger/5 p-5 text-danger">
-          {m.error_read()}
-        </p>
-      {/await}
-    {:else if session.data}
+    {#if session.data}
       {#await loadEditor()}
         <div
           class="h-40 animate-pulse rounded-2xl bg-border/40"
@@ -240,9 +216,15 @@
   </AlertDialog.Portal>
 </AlertDialog.Root>
 
-{#if addingFromLink}
+{#if addingFromLink || sharedLink}
   {#await loadAddFromLink() then { default: AddFromLink }}
-    <AddFromLink onclose={() => (addingFromLink = false)} />
+    <AddFromLink
+      url={sharedLink ?? undefined}
+      onclose={() => {
+        addingFromLink = false;
+        sharedLink = null;
+      }}
+    />
   {/await}
 {/if}
 
