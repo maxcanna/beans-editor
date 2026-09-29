@@ -112,26 +112,22 @@ test.describe('offline', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test('turns a shared product page into a Beanconqueror bean link while offline', async ({
-    page,
-    context,
-  }) => {
+  test('opens a shared product page in the bean dialog while offline', async ({ page, context }) => {
     await page.goto('/');
     await waitForServiceWorker(page);
     await context.setOffline(true);
 
-    const opened = page.waitForRequest((request) => request.url().startsWith('beanconqueror:'));
     await shareText(page, { title: 'Guji', text: 'Look: https://shop.example/products/guji-natural?v=2' });
-    const screen = page.getByTestId('shared-link');
-    await expect(screen).toContainText("You're offline");
-    await expect(screen).toContainText('Guji Natural');
-    const link = new URL((await opened).url());
-    expect(link.href).toMatch(/^beanconqueror:\/\/ADD_USER_BEAN\?shareUserBean0=/);
-    const payload = atob(link.searchParams.get('shareUserBean0') ?? '');
+    const dialog = page.getByTestId('add-from-link');
+    await expect(dialog.getByRole('status').first()).toContainText("You're offline");
+    await dialog.getByRole('button', { name: 'Fill in by hand' }).click();
+    await expect(dialog.getByLabel('Name')).toHaveValue('Guji Natural');
+    const href = (await dialog.getByTestId('open-in-beanconqueror').getAttribute('href'))!;
+    expect(href).toMatch(/^beanconqueror:\/\/ADD_USER_BEAN\?shareUserBean0=/);
+    const payload = atob(new URL(href).searchParams.get('shareUserBean0') ?? '');
     expect(payload).toContain('Guji Natural');
     expect(payload).toContain('https://shop.example/products/guji-natural?v=2');
-    await expect(screen.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', link.href);
-    // The share parameter is consumed, so a reload doesn't open Beanconqueror again.
+    // The share parameter is consumed, so a reload doesn't reopen the dialog.
     await expect(page).toHaveURL(/\/$/);
   });
 });
