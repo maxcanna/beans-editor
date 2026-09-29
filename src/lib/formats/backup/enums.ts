@@ -32,3 +32,15 @@ export const BLENDS = { UNKNOWN: 'Unknown', SINGLE_ORIGIN: 'Single Origin', BLEN
 export type RoastingType = keyof typeof ROASTING_TYPES;
 export type Roast = keyof typeof ROASTS;
 export type Blend = keyof typeof BLENDS;
+
+/** How a frozen bean is stored (src/enums/beans/beanFreezingStorage.ts). */
+export const FREEZING_STORAGES = {
+  UNKNOWN: 'Unknown',
+  COFFEE_BAG: 'Coffee bag',
+  COFFEE_JAR: 'Coffee jar',
+  ZIP_LOCK: 'Zip lock',
+  VACUUM_SEALED: 'Vacuum sealed',
+  TUBE: 'Tube',
+} as const;
+
+export type FreezingStorage = keyof typeof FREEZING_STORAGES;
