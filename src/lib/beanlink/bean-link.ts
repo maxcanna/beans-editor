@@ -1,4 +1,4 @@
-import type { Blend, Roast, RoastingType } from '../formats/backup/enums';
+import type { Blend, FreezingStorage, Roast, RoastingType } from '../formats/backup/enums';
 import { ProtoWriter } from './proto';
 
 /** An origin as BeanInformation carries it. */
@@ -15,12 +15,24 @@ export interface SharedOrigin {
   percentage?: number;
 }
 
-/** The bean fields a link carries; everything is optional except the name. */
+/**
+ * A bean read from a product page or typed into the review form; everything is
+ * optional except the name. Dates are ISO timestamps, as the app stores them.
+ */
 export interface SharedBean {
   name: string;
   roaster?: string;
-  /** ISO date. */
+  buyDate?: string;
   roastingDate?: string;
+  /**
+   * The best before date and the freezing details aren't in BeanProto, so a
+   * link can't carry them (the app drops unknown fields); only a backup can.
+   */
+  bestDate?: string;
+  frozenDate?: string;
+  unfrozenDate?: string;
+  frozenStorageType?: FreezingStorage;
+  frozenNote?: string;
   note?: string;
   roast?: Roast;
   roast_custom?: string;
@@ -100,6 +112,7 @@ export function encodeBean(bean: SharedBean): Uint8Array {
     if (whole !== undefined) w.uint(field, whole);
   };
   str(1, bean.name);
+  str(2, bean.buyDate);
   str(3, bean.roastingDate);
   str(4, bean.note);
   str(5, bean.roaster);
