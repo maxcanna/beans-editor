@@ -165,16 +165,19 @@ test('adds the bean to the open backup when started from the editor', async ({ p
   await expect(page.getByTestId('save-state')).toContainText('Unsaved');
 });
 
-const DATED_PAGE = `${PAGE}Roast date: 15/09/2026\nBest before: 15/03/2027\n`;
+// Dates on the page are left alone: the user types them.
+const PAGE_WITH_DATES = `${PAGE}Roast date: 15/09/2026\nBest before: 15/03/2027\n`;
 
 test('puts the roast date in the link, but not what the app would drop', async ({ page }) => {
-  await mockJina(page, DATED_PAGE);
+  await mockJina(page, PAGE_WITH_DATES);
   await page.goto('/');
   await page.getByRole('button', { name: 'Add a bean from a link' }).click();
   const dialog = page.getByTestId('add-from-link');
   await dialog.getByLabel('Product page link').fill(PRODUCT);
 
-  await expect(dialog.getByLabel('Roast date')).toHaveValue('2026-09-15');
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await expect(dialog.getByLabel('Roast date')).toHaveValue('');
+  await dialog.getByLabel('Roast date').fill('2026-09-15');
   // Beanconqueror's Add Bean screen ignores a shared buy date.
   await expect(dialog.getByLabel('Buy date')).toHaveCount(0);
   await expect(dialog.getByLabel('Best before')).toHaveCount(0);
@@ -189,7 +192,7 @@ test('puts the roast date in the link, but not what the app would drop', async (
 });
 
 test('adds dates and freezing details to a backup bean', async ({ page }) => {
-  await mockJina(page, DATED_PAGE);
+  await mockJina(page, PAGE_WITH_DATES);
   await page.goto('/');
   await page.getByTestId('file-input').setInputFiles({
     name: 'Beanconqueror.zip',
@@ -200,7 +203,10 @@ test('adds dates and freezing details to a backup bean', async ({ page }) => {
   const dialog = page.getByTestId('add-from-link');
   await dialog.getByLabel('Product page link').fill(PRODUCT);
 
-  await expect(dialog.getByLabel('Best before')).toHaveValue('2027-03-15');
+  await expect(dialog.getByLabel('Best before')).toHaveValue('');
+  await dialog.getByLabel('Roast date').fill('2026-09-15');
+  await dialog.getByLabel('Buy date').fill('2026-09-18');
+  await dialog.getByLabel('Best before').fill('2027-03-15');
   await dialog.getByLabel('Freeze date', { exact: true }).fill('2026-09-25');
   await dialog.getByLabel('Freezing storage type').selectOption({ label: 'Coffee bag' });
   await dialog.getByLabel('Freezing notes').fill('Top shelf');
@@ -217,6 +223,7 @@ test('adds dates and freezing details to a backup bean', async ({ page }) => {
   const iso = (day: string) => page.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), day);
   expect(bean).toMatchObject({
     roastingDate: await iso('2026-09-15'),
+    buyDate: await iso('2026-09-18'),
     bestDate: await iso('2027-03-15'),
     frozenDate: await iso('2026-09-25'),
     unfrozenDate: '',
@@ -237,41 +244,39 @@ test('offers Download and no Share, which browsers refuse for zip files', async 
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0);
 });
 
-test('reads a shared product page, then opens it in Beanconqueror', async ({ page }) => {
+test('reads a shared product page and lets the user add dates before opening Beanconqueror', async ({
+  page,
+}) => {
   let answer: () => void = () => {};
   const answered = new Promise<void>((resolve) => (answer = resolve));
   await page.route('https://r.jina.ai/**', async (route) => {
     await answered;
-    await route.fulfill({ status: 200, body: DATED_PAGE, headers: { 'access-control-allow-origin': '*' } });
+    await route.fulfill({ status: 200, body: PAGE, headers: { 'access-control-allow-origin': '*' } });
   });
-  const opened = page.waitForRequest((request) => request.url().startsWith('beanconqueror:'));
   // Where the service worker sends a shared link.
   await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
 
-  const screen = page.getByTestId('shared-link');
-  await expect(screen.getByTestId('shared-link-reading')).toContainText('Reading roaster.example');
+  const dialog = page.getByTestId('add-from-link');
+  await expect(dialog.getByTestId('link-reading')).toContainText('Reading roaster.example');
+  await expect(page).toHaveURL(/\/$/);
   answer();
 
-  await expect(screen).toContainText('Colombia Motta');
-  await expect(screen).toContainText('2026-09-15');
-  const bytes = Buffer.from(new URL((await opened).url()).searchParams.get('shareUserBean0')!, 'base64');
-  expect(bytes.toString('latin1')).toContain('Colombia Motta');
-  // Nothing takes over in the test browser, so the page asks for a tap.
-  await expect(screen.getByTestId('open-status')).toContainText('Tap Open in Beanconqueror');
-  await expect(screen.getByTestId('open-in-beanconqueror')).toBeVisible();
-
-  // Desktop Chrome's "Open app?" prompt for the beanconqueror: link holds real input events.
-  await screen.getByRole('button', { name: 'Done' }).dispatchEvent('click');
-  await expect(page.getByTestId('howto')).toBeVisible();
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await dialog.getByLabel('Roast date').fill('2026-09-15');
+  const href = (await dialog.getByTestId('open-in-beanconqueror').getAttribute('href'))!;
+  const bytes = Buffer.from(new URL(href).searchParams.get('shareUserBean0')!, 'base64').toString('latin1');
+  expect(bytes).toContain('Colombia Motta');
+  expect(bytes).toContain(await page.evaluate(() => new Date('2026-09-15T00:00:00').toISOString()));
 });
 
-test('sends a shared link with just its name when the page can’t be read', async ({ page }) => {
+test('offers to fill in a shared link by hand when the page can’t be read', async ({ page }) => {
   await page.route('https://r.jina.ai/**', (route) =>
     route.fulfill({ status: 500, body: '', headers: { 'access-control-allow-origin': '*' } }),
   );
   await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
-  const screen = page.getByTestId('shared-link');
-  await expect(screen.getByRole('alert')).toContainText("Couldn't read the page");
-  await expect(screen).toContainText('Colombia Motta');
-  await expect(screen.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', /^beanconqueror:/);
+  const dialog = page.getByTestId('add-from-link');
+  await expect(dialog.getByRole('alert')).toContainText("Couldn't read this page");
+  await dialog.getByRole('button', { name: 'Fill in by hand' }).click();
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await expect(dialog.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', /^beanconqueror:/);
 });

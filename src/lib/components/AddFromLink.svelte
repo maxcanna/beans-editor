@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CircleCheck, ExternalLink, LoaderCircle, Plus, RotateCw, TriangleAlert, X } from '@lucide/svelte';
   import { Dialog } from 'bits-ui';
+  import { onMount } from 'svelte';
   import { m } from '$paraglide/messages';
   import { beanLink, findSharedUrl, nameFromUrl, type SharedBean } from '../beanlink/bean-link';
   import {
@@ -21,9 +22,11 @@
      * backup instead of being sent to Beanconqueror.
      */
     onadd?: (bean: SharedBean) => void;
+    /** A product page shared from another app: it's read right away. */
+    url?: URL;
   }
 
-  let { onclose, onadd }: Props = $props();
+  let { onclose, onadd, url: sharedUrl }: Props = $props();
 
   /** The review form: every field a plain string, so inputs can bind to it. */
   interface Form {
@@ -206,6 +209,14 @@
     if (!online || !findSharedUrl(input)) return;
     typingTimer = setTimeout(() => void read(), 800);
   }
+
+  onMount(() => {
+    if (sharedUrl) {
+      input = sharedUrl.href;
+      void read();
+    }
+    return () => clearTimeout(openTimer);
+  });
 
   const ORIGIN_FIELDS: { key: OriginKey; label: () => string }[] = [
     { key: 'country', label: m.origin_country },
