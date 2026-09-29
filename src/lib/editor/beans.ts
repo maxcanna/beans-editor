@@ -1,4 +1,5 @@
 import type { BackupRecord } from '../formats/backup/backup';
+import type { SharedBean } from '../beanlink/bean-link';
 import type { Blend, RoastingType, Roast } from '../formats/backup/enums';
 import { newConfig } from './records';
 
@@ -242,4 +243,24 @@ export function filterBeans(beans: readonly BackupRecord[], filter: BeanFilter):
       return words.every((w) => haystack.includes(w));
     })
     .sort((a, b) => b.config.unix_timestamp - a.config.unix_timestamp);
+}
+
+/** A new backup bean from what a product page gave (the "Add from link" review form). */
+export function beanFromShared(shared: SharedBean, now = Date.now()): BackupRecord {
+  const bean: Record<string, unknown> = { ...newBean(now) };
+  for (const [key, value] of Object.entries(shared)) {
+    // Image URLs would need downloading into attachments, which a backup edit can't do.
+    if (value !== undefined && key !== 'bean_information' && key !== 'external_images') bean[key] = value;
+  }
+  if (shared.bean_information?.length) {
+    bean['bean_information'] = shared.bean_information.map((origin) => ({
+      ...emptyOrigin(),
+      // The app's defaults for a new origin (IBeanInformation).
+      purchasing_price: 0,
+      fob_price: 0,
+      ...origin,
+      percentage: origin.percentage ?? 0,
+    }));
+  }
+  return bean as BackupRecord;
 }
