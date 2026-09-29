@@ -16,6 +16,8 @@ const KEY = 'pending-file';
 
 export const SHARE_TARGET_PATH = '/share-target';
 export const SHARED_FILE_PARAM = 'shared-file';
+/** A shared product page, which the page reads and turns into a Beanconqueror link. */
+export const SHARED_LINK_PARAM = 'shared-link';
 /** Set when a share arrived with neither a file nor a link to use. */
 export const SHARE_EMPTY_PARAM = 'share-empty';
 

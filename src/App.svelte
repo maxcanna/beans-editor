@@ -16,6 +16,8 @@
   const loadAddFromLink = () => import('./lib/components/AddFromLink.svelte');
 
   let addingFromLink = $state(false);
+  /** A product page shared from another app, on its way to Beanconqueror. */
+  let sharedLink = $state<URL | null>(null);
 
   const session = new EditorSession();
 
@@ -60,6 +62,7 @@
       if (restored.status === 'invalid') invalidDraft = { raw: restored.raw };
       const incoming = await consumeShare(window.location, window.history);
       if (incoming.type === 'file') await open(incoming.file);
+      if (incoming.type === 'link') sharedLink = incoming.url;
       if (incoming.type === 'empty') openError = m.share_empty();
     })();
 
@@ -213,9 +216,15 @@
   </AlertDialog.Portal>
 </AlertDialog.Root>
 
-{#if addingFromLink}
+{#if addingFromLink || sharedLink}
   {#await loadAddFromLink() then { default: AddFromLink }}
-    <AddFromLink onclose={() => (addingFromLink = false)} />
+    <AddFromLink
+      url={sharedLink ?? undefined}
+      onclose={() => {
+        addingFromLink = false;
+        sharedLink = null;
+      }}
+    />
   {/await}
 {/if}
 
