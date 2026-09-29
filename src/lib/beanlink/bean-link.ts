@@ -22,6 +22,10 @@ export interface SharedOrigin {
 export interface SharedBean {
   name: string;
   roaster?: string;
+  /**
+   * BeanProto has a buy date, but the app's Add Bean screen doesn't copy it from a
+   * shared bean (beans-add.component.ts, __loadBean), so only a backup gets it.
+   */
   buyDate?: string;
   roastingDate?: string;
   /**

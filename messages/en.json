@@ -53,7 +53,7 @@
   "bean_unfrozen_date": "Unfreeze date",
   "bean_frozen_storage": "Freezing storage type",
   "bean_frozen_note": "Freezing notes",
-  "link_backup_only_fields": "Beanconqueror doesn't accept a best before date or freezing details from a shared link. To add them, open a backup and use From link there.",
+  "link_backup_only_fields": "Beanconqueror doesn't take a buy date, best before date or freezing details from a shared link. To add them, open a backup and use From link there.",
   "bean_roasting_type": "Roast type",
   "bean_roast": "Degree of roast",
   "bean_roast_custom": "Custom degree of roast",
@@ -203,5 +203,13 @@
   "link_backup_untouched": "Your backup isn't changed.",
   "link_opening": "Opening Beanconqueror…",
   "link_opened": "Sent to Beanconqueror. Check the bean there and tap Save to add it.",
-  "link_not_opened": "Beanconqueror didn't open. Make sure it's installed on this device, then try again."
+  "link_not_opened": "Beanconqueror didn't open. Make sure it's installed on this device, then try again.",
+  "share_link_title": "Adding a shared bean to Beanconqueror",
+  "share_link_tap": "Tap Open in Beanconqueror to send the bean there. If nothing happens, check that Beanconqueror is installed.",
+  "share_link_done": "Done",
+  "share_link_offline": "You're offline, so the page couldn't be read. The bean goes with its name and link only.",
+  "share_link_slow": "The page took too long to read. The bean goes with its name and link only.",
+  "share_link_dead": "The shop says this page no longer exists. The bean goes with its name and link only.",
+  "share_link_rate_limited": "Too many pages read in a short time. The bean goes with its name and link only.",
+  "share_link_unreachable": "Couldn't read the page. The bean goes with its name and link only."
 }

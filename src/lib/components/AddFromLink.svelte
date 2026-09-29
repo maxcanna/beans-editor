@@ -114,12 +114,12 @@
       url: f.url.trim() || undefined,
       ean_article_number: f.ean.trim() || undefined,
       note: f.note.trim() || undefined,
-      buyDate: isoFromLocalDay(f.buyDate) || undefined,
       roastingDate: isoFromLocalDay(f.roastingDate) || undefined,
     };
     if (Object.keys(origin).length > 0) bean.bean_information = [origin];
-    // A link can't carry these (see SharedBean), so only a backup gets them.
+    // Beanconqueror doesn't take these from a link (see SharedBean), so only a backup gets them.
     if (onadd) {
+      bean.buyDate = isoFromLocalDay(f.buyDate) || undefined;
       bean.bestDate = isoFromLocalDay(f.bestDate) || undefined;
       bean.frozenDate = isoFromLocalDay(f.frozenDate) || undefined;
       bean.unfrozenDate = isoFromLocalDay(f.unfrozenDate) || undefined;
@@ -379,11 +379,11 @@
               {m.bean_roast_date()}
               <input class={inputClass} type="date" bind:value={form.roastingDate} />
             </label>
-            <label class={labelClass}>
-              {m.bean_buy_date()}
-              <input class={inputClass} type="date" bind:value={form.buyDate} />
-            </label>
             {#if onadd}
+              <label class={labelClass}>
+                {m.bean_buy_date()}
+                <input class={inputClass} type="date" bind:value={form.buyDate} />
+              </label>
               <label class={labelClass}>
                 {m.bean_best_date()}
                 <input class={inputClass} type="date" bind:value={form.bestDate} />
