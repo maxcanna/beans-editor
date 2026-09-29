@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { backupZip } from './helpers';
+import { backupZip, readBackupJson } from './helpers';
 
 // page.route can't see requests a service worker handles.
 test.use({ serviceWorkers: 'block' });
@@ -163,6 +163,67 @@ test('adds the bean to the open backup when started from the editor', async ({ p
   await expect(editor).toContainText('Beans: 3');
   await expect(editor).toContainText('Colombia Motta');
   await expect(page.getByTestId('save-state')).toContainText('Unsaved');
+});
+
+const DATED_PAGE = `${PAGE}Roast date: 15/09/2026\nBest before: 15/03/2027\n`;
+
+test('puts the roast and buy dates in the link, but not what the app would drop', async ({ page }) => {
+  await mockJina(page, DATED_PAGE);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
+  const dialog = page.getByTestId('add-from-link');
+  await dialog.getByLabel('Product page link').fill(PRODUCT);
+
+  await expect(dialog.getByLabel('Roast date')).toHaveValue('2026-09-15');
+  await dialog.getByLabel('Buy date').fill('2026-09-20');
+  await expect(dialog.getByLabel('Best before')).toHaveCount(0);
+  await expect(dialog.getByLabel('Freeze date', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByTestId('backup-only-fields')).toBeVisible();
+
+  const href = (await dialog.getByTestId('open-in-beanconqueror').getAttribute('href'))!;
+  const payload = new URL(href).searchParams.get('shareUserBean0')!;
+  const bytes = Buffer.from(payload, 'base64').toString('latin1');
+  const iso = (day: string) => page.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), day);
+  expect(bytes).toContain(await iso('2026-09-15'));
+  expect(bytes).toContain(await iso('2026-09-20'));
+});
+
+test('adds dates and freezing details to a backup bean', async ({ page }) => {
+  await mockJina(page, DATED_PAGE);
+  await page.goto('/');
+  await page.getByTestId('file-input').setInputFiles({
+    name: 'Beanconqueror.zip',
+    mimeType: 'application/zip',
+    buffer: backupZip(),
+  });
+  await page.getByRole('button', { name: 'From link' }).click();
+  const dialog = page.getByTestId('add-from-link');
+  await dialog.getByLabel('Product page link').fill(PRODUCT);
+
+  await expect(dialog.getByLabel('Best before')).toHaveValue('2027-03-15');
+  await dialog.getByLabel('Freeze date', { exact: true }).fill('2026-09-25');
+  await dialog.getByLabel('Freezing storage type').selectOption({ label: 'Coffee bag' });
+  await dialog.getByLabel('Freezing notes').fill('Top shelf');
+  await dialog.getByRole('button', { name: 'Add to backup' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Download backup' }).click(),
+  ]);
+  const { readFileSync } = await import('node:fs');
+  const beans = readBackupJson(readFileSync(await download.path()))['BEANS'] as Record<string, unknown>[];
+  const bean = beans.find((b) => b['name'] === 'Colombia Motta')!;
+  const iso = (day: string) => page.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), day);
+  expect(bean).toMatchObject({
+    roastingDate: await iso('2026-09-15'),
+    bestDate: await iso('2027-03-15'),
+    frozenDate: await iso('2026-09-25'),
+    unfrozenDate: '',
+    frozenStorageType: 'COFFEE_BAG',
+    frozenNote: 'Top shelf',
+  });
+  expect(bean['frozenId']).toMatch(/^\w{6}$/);
 });
 
 test('offers Download and no Share, which browsers refuse for zip files', async ({ page }) => {
