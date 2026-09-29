@@ -10,9 +10,10 @@
   // No "routes" on purpose: the repository doesn't name a hostname. Attach a custom
   // domain in the Cloudflare dashboard (Worker › Settings › Domains & Routes); without a
   // "routes" key, deploys leave the dashboard's domains alone.
-  // Keep *.workers.dev so branch preview URLs keep working.
-  "workers_dev": true,
-  "preview_urls": true,
+  // Production and branch Previews are served on custom domains only, so the
+  // *.workers.dev URLs (production, and Version/Preview URLs) are off.
+  "workers_dev": false,
+  "preview_urls": false,
   // Required by `wrangler preview`, which Workers Builds runs for non-production branches.
   // Empty: there are no bindings or vars, so Previews need no settings of their own.
   "previews": {},

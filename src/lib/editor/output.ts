@@ -1,4 +1,7 @@
-/** Getting an edited file out of the browser: download, or the system share sheet. */
+/**
+ * Getting an edited file out of the browser. Download only: Chromium's Web Share refuses
+ * zip files (share_service_impl.cc allows images, media, PDF and text), so Share can't work.
+ */
 
 const ZIP_TYPE = 'application/zip';
 
@@ -14,20 +17,4 @@ export function download(bytes: Uint8Array, fileName: string, type = ZIP_TYPE) {
   a.download = fileName;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-export function canShareFiles(): boolean {
-  if (typeof navigator.canShare !== 'function') return false;
-  return navigator.canShare({ files: [new File([], 'x.zip', { type: ZIP_TYPE })] });
-}
-
-/** Resolves false when the user closes the share sheet without picking a target. */
-export async function share(bytes: Uint8Array, fileName: string): Promise<boolean> {
-  try {
-    await navigator.share({ files: [new File([bytes as BlobPart], fileName, { type: ZIP_TYPE })] });
-    return true;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return false;
-    throw error;
-  }
 }

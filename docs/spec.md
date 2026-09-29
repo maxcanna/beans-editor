@@ -7,7 +7,7 @@ A backend-free Progressive Web App (PWA) that edits Beanconqueror backups and ad
 
 1. **Share a URL** (Android share sheet → Beans Editor): the service worker reads the product page, builds the bean and redirects straight to a `beanconqueror://ADD_USER_BEAN` link, so Beanconqueror opens its Add Bean screen filled in. No Beans Editor UI shows. The backup is never touched.
 2. **Share a zip**: the file's contents are checked; a valid backup opens in the editor, anything else gets a message saying how to export a backup from the app.
-3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download or share it back.
+3. **Open the app directly**: pick or drop a zip (same check), edit the backup, and download it.
 4. **Add a bean from a URL in the app**: paste a product page link, the bean's fields are extracted and shown for review, then "Open in Beanconqueror" opens the app's Add Bean screen with the same link as flow 1. The open backup is never touched; adding beans to a backup stays a manual edit.
 
 ## 1. File formats
@@ -35,15 +35,15 @@ Rules:
 - **Views**: a cards/grid toggle. Phones start in cards and desktops in the grid, and the app remembers the choice. Both views are virtualized, so thousands of brews stay smooth.
 - **Filters**: text search, show or hide archived, and per-type filters (roaster, bean, method, grinder, date range). The grid also sorts.
 - **Validation**: each field is checked as you type, and a summary of problems is shown before export.
-- **Output**: Download, plus Share through the Web Share API (the Android share sheet: Drive, Quick Share, Gmail, and so on). No cloud API keys.
-- **Bean from a URL** (flows 1 and 4): Jina Reader fetches the page (it's the CORS bridge), rules pull out JSON-LD / Shopify product data and labelled lines (country, altitude, process…), and an AI pass fills what's left where one is available without a user API key. It needs the network, so it's disabled offline; flow 1 then falls back to a bean named after the link.
+- **Output**: Download only. There is no Share button: Chromium's Web Share, including Chrome on Android, refuses zip files (it only shares images, media, PDF and text). No cloud API keys.
+- **Bean from a URL** (flows 1 and 4): Jina Reader fetches the page (it's the CORS bridge), Shopify product pages also get the shop's product JSON, and rules pull out labelled lines (country, altitude, process…) in English, Italian, German, French, Spanish and Portuguese (`src/lib/extract`). There is no AI pass for now; what isn't found stays blank on the review form. It needs the network, so it's disabled offline; flow 1 then falls back to a bean named after the link.
 
 ## 3. Offline, service worker, share target
 
 - Built with vite-plugin-pwa in `injectManifest` mode, with our own service worker.
 - **The whole build is precached**: every JS chunk, CSS, the self-hosted fonts and icons. After the first visit nothing needs the network.
 - **The manifest has a `share_target`** (POST, multipart) for backups (`.zip`, `application/zip`, `application/x-zip-compressed`, `application/octet-stream`) and for shared links (`title`, `text`, `url`). `application/octet-stream` is accepted because Android often labels a zip that way, and Chrome drops shared files whose type isn't in `accept`; the contents check still rejects anything that isn't a backup. The service worker catches the POST, stores a file in IndexedDB, and redirects (303) to `/?shared-file=1`. A share with neither a file nor a link redirects to `/?share-empty=1`, and the page says what to share instead. This works offline.
-- **Sharing a product page**: the service worker finds the URL in the shared text, builds a bean, and answers with a 303 redirect to `beanconqueror://ADD_USER_BEAN?shareUserBean0=…` (the app's own bean share link: BeanProto, base64, 400-character chunks; no allow-list). Beanconqueror's prefilled Add Bean screen is the review step. Until extraction lands, the bean carries a name taken from the URL and the URL itself. If Android Chrome blocks the redirect without a tap, the fallback is a one-button "Open in Beanconqueror" page.
+- **Sharing a product page**: the service worker finds the URL in the shared text, builds a bean, and answers with a 303 redirect to `beanconqueror://ADD_USER_BEAN?shareUserBean0=…` (the app's own bean share link: BeanProto, base64, 400-character chunks; no allow-list). Beanconqueror's prefilled Add Bean screen is the review step. The shared-link redirect still carries only a name taken from the URL and the URL itself; the in-app flow 4 reads the page. If Android Chrome blocks the redirect without a tap, the fallback is a one-button "Open in Beanconqueror" page.
 - **Opening a shared file**: it goes straight into the editor. Only if unsaved work exists does the app ask: replace, merge, or cancel.
 - **Updates**: a new version waits in the background. An "Update available" banner switches over when tapped, so nothing reloads while you're editing.
 - **An automated Playwright test runs with the network cut**: open a backup, edit it, export it, and share a file into it.

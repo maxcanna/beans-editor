@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { CircleCheck, Download, FileArchive, Share2, X } from '@lucide/svelte';
+  import { CircleCheck, Download, FileArchive, X } from '@lucide/svelte';
   import { Tabs } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { writeBackup, type BackupRecord } from '../../formats/backup/backup';
   import { newBean } from '../../editor/beans';
   import { nameIndex } from '../../editor/brews';
   import { newMill } from '../../editor/gear';
-  import { canShareFiles, download, outputName, share } from '../../editor/output';
+  import { download, outputName } from '../../editor/output';
   import {
     addRecord,
     brewsUsing,
@@ -53,7 +53,8 @@
   // Raw, so the record stays a plain object that IndexedDB can store.
   let editing = $state.raw<{ key: Editable; record: BackupRecord; isNew: boolean } | null>(null);
   let tab = $state<Editable>('BEANS');
-  const shareable = canShareFiles();
+  let addingFromLink = $state(false);
+  const loadAddFromLink = () => import('../AddFromLink.svelte');
 
   const options = (key: 'BEANS' | 'MILL' | 'PREPARATION') =>
     records(data, key)
@@ -99,10 +100,6 @@
     session.markSaved();
   }
 
-  async function shareBackup() {
-    if (await share(bytes(), outputName(session.fileName))) session.markSaved();
-  }
-
   const action =
     'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 </script>
@@ -135,12 +132,6 @@
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">
-      {#if shareable}
-        <button type="button" class="{action} border border-border hover:bg-border/40" onclick={shareBackup}>
-          <Share2 class="size-4" aria-hidden="true" />
-          {m.editor_share()}
-        </button>
-      {/if}
       <button
         type="button"
         class="{action} bg-accent text-accent-fg hover:bg-accent/90"
@@ -182,6 +173,7 @@
           brewCount={(uuid) => brewsUsing(data, 'BEANS', uuid)}
           onopen={(uuid) => openRecord('BEANS', uuid)}
           onadd={() => (editing = { key: 'BEANS', record: newBean(), isNew: true })}
+          onaddlink={() => (addingFromLink = true)}
         />
       {/if}
     </Tabs.Content>
@@ -261,4 +253,10 @@
       />
     {/if}
   {/key}
+{/if}
+
+{#if addingFromLink}
+  {#await loadAddFromLink() then { default: AddFromLink }}
+    <AddFromLink onclose={() => (addingFromLink = false)} />
+  {/await}
 {/if}

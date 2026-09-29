@@ -1,7 +1,7 @@
 /**
  * The smallest protobuf writer that covers Beanconqueror's BeanProto
  * (src/classes/bean/bean.proto in graphefruit/Beanconqueror): varints,
- * doubles, strings and nested messages. DOM-free, so the service worker can use it.
+ * strings and nested messages (its numbers are all unsigned integers). DOM-free, so the service worker can use it.
  */
 export class ProtoWriter {
   #bytes: number[] = [];
@@ -35,14 +35,6 @@ export class ProtoWriter {
 
   bool(field: number, value: boolean): this {
     return this.uint(field, value ? 1 : 0);
-  }
-
-  double(field: number, value: number): this {
-    this.#tag(field, 1);
-    const view = new DataView(new ArrayBuffer(8));
-    view.setFloat64(0, value, true);
-    for (let i = 0; i < 8; i++) this.#bytes.push(view.getUint8(i));
-    return this;
   }
 
   string(field: number, value: string): this {
