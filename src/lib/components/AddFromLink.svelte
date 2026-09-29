@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CircleCheck, ExternalLink, LoaderCircle, Plus, RotateCw, TriangleAlert, X } from '@lucide/svelte';
   import { Dialog } from 'bits-ui';
+  import { onMount } from 'svelte';
   import { m } from '$paraglide/messages';
   import { beanLink, findSharedUrl, nameFromUrl, type SharedBean } from '../beanlink/bean-link';
   import {
@@ -21,9 +22,11 @@
      * backup instead of being sent to Beanconqueror.
      */
     onadd?: (bean: SharedBean) => void;
+    /** A product page shared from another app: it's read right away. */
+    url?: URL;
   }
 
-  let { onclose, onadd }: Props = $props();
+  let { onclose, onadd, url: sharedUrl }: Props = $props();
 
   /** The review form: every field a plain string, so inputs can bind to it. */
   interface Form {
@@ -114,12 +117,12 @@
       url: f.url.trim() || undefined,
       ean_article_number: f.ean.trim() || undefined,
       note: f.note.trim() || undefined,
-      buyDate: isoFromLocalDay(f.buyDate) || undefined,
       roastingDate: isoFromLocalDay(f.roastingDate) || undefined,
     };
     if (Object.keys(origin).length > 0) bean.bean_information = [origin];
-    // A link can't carry these (see SharedBean), so only a backup gets them.
+    // Beanconqueror doesn't take these from a link (see SharedBean), so only a backup gets them.
     if (onadd) {
+      bean.buyDate = isoFromLocalDay(f.buyDate) || undefined;
       bean.bestDate = isoFromLocalDay(f.bestDate) || undefined;
       bean.frozenDate = isoFromLocalDay(f.frozenDate) || undefined;
       bean.unfrozenDate = isoFromLocalDay(f.unfrozenDate) || undefined;
@@ -206,6 +209,14 @@
     if (!online || !findSharedUrl(input)) return;
     typingTimer = setTimeout(() => void read(), 800);
   }
+
+  onMount(() => {
+    if (sharedUrl) {
+      input = sharedUrl.href;
+      void read();
+    }
+    return () => clearTimeout(openTimer);
+  });
 
   const ORIGIN_FIELDS: { key: OriginKey; label: () => string }[] = [
     { key: 'country', label: m.origin_country },
@@ -379,11 +390,11 @@
               {m.bean_roast_date()}
               <input class={inputClass} type="date" bind:value={form.roastingDate} />
             </label>
-            <label class={labelClass}>
-              {m.bean_buy_date()}
-              <input class={inputClass} type="date" bind:value={form.buyDate} />
-            </label>
             {#if onadd}
+              <label class={labelClass}>
+                {m.bean_buy_date()}
+                <input class={inputClass} type="date" bind:value={form.buyDate} />
+              </label>
               <label class={labelClass}>
                 {m.bean_best_date()}
                 <input class={inputClass} type="date" bind:value={form.bestDate} />
