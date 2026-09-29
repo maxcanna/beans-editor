@@ -151,6 +151,21 @@ describe('beans', () => {
     ]);
   });
 
+  it('keeps dates and freezing details on a bean added to a backup', () => {
+    const dates = {
+      buyDate: '2026-09-20T00:00:00.000Z',
+      roastingDate: '2026-09-15T00:00:00.000Z',
+      bestDate: '2027-03-15T00:00:00.000Z',
+      frozenDate: '2026-09-25T00:00:00.000Z',
+      frozenStorageType: 'COFFEE_BAG',
+      frozenNote: 'Top shelf',
+    } as const;
+    const bean = beanFromShared({ name: 'Frozen', ...dates });
+    expect(bean).toMatchObject({ ...dates, unfrozenDate: '' });
+    expect(bean['frozenId']).toMatch(/^[0-9a-j]{6}$/);
+    expect(beanFromShared({ name: 'Fresh' })['frozenId']).toBe('');
+  });
+
   it('validates the form', () => {
     const form = beanForm(newBean());
     expect(validateBean(form)).toEqual({ name: 'required' });
