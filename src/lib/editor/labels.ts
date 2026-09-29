@@ -1,5 +1,5 @@
 import { m } from '$paraglide/messages';
-import type { Blend, Roast, RoastingType } from '../formats/backup/enums';
+import type { Blend, FreezingStorage, Roast, RoastingType } from '../formats/backup/enums';
 
 /** Translatable labels for the codes Beanconqueror stores. */
 export const ROAST_LABELS: Record<Roast, () => string> = {
@@ -30,6 +30,15 @@ export const BLEND_LABELS: Record<Blend, () => string> = {
   UNKNOWN: m.blend_UNKNOWN,
   SINGLE_ORIGIN: m.blend_SINGLE_ORIGIN,
   BLEND: m.blend_BLEND,
+};
+
+export const FREEZING_STORAGE_LABELS: Record<FreezingStorage, () => string> = {
+  UNKNOWN: m.freezing_storage_UNKNOWN,
+  COFFEE_BAG: m.freezing_storage_COFFEE_BAG,
+  COFFEE_JAR: m.freezing_storage_COFFEE_JAR,
+  ZIP_LOCK: m.freezing_storage_ZIP_LOCK,
+  VACUUM_SEALED: m.freezing_storage_VACUUM_SEALED,
+  TUBE: m.freezing_storage_TUBE,
 };
 
 /** Label for a stored code, falling back to the raw value for codes from newer app versions. */

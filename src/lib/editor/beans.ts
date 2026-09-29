@@ -252,6 +252,8 @@ export function beanFromShared(shared: SharedBean, now = Date.now()): BackupReco
     // Image URLs would need downloading into attachments, which a backup edit can't do.
     if (value !== undefined && key !== 'bean_information' && key !== 'external_images') bean[key] = value;
   }
+  // The app gives every frozen bean a short id (uiBeanHelper.generateFrozenId).
+  if (shared.frozenDate) bean['frozenId'] = Math.random().toString(20).slice(2, 8);
   if (shared.bean_information?.length) {
     bean['bean_information'] = shared.bean_information.map((origin) => ({
       ...emptyOrigin(),
