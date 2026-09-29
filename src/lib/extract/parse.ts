@@ -4,6 +4,7 @@
  */
 import type { RoastingType } from '../formats/backup/enums';
 import { nameFromUrl, type SharedBean, type SharedOrigin } from '../beanlink/bean-link';
+import { isoFromLocalDay } from '../editor/beans';
 
 /** The subset of Shopify's `/products/<handle>.json` the extractor reads. */
 export interface ShopifyProduct {
@@ -22,7 +23,17 @@ export interface ShopifyProduct {
 }
 
 type OriginKey = Exclude<keyof SharedOrigin, 'percentage'>;
-type Field = OriginKey | 'aromatics' | 'weight' | 'cost' | 'roastingType' | 'roaster' | 'name' | 'ean';
+type Field =
+  | OriginKey
+  | 'aromatics'
+  | 'weight'
+  | 'cost'
+  | 'roastingType'
+  | 'roaster'
+  | 'name'
+  | 'ean'
+  | 'roastDate'
+  | 'bestDate';
 
 /** Labels seen on roaster pages, in English, Italian, German, French, Spanish and Portuguese. */
 const LABELS: Record<Field, string[]> = {
@@ -241,6 +252,51 @@ const LABELS: Record<Field, string[]> = {
     'empfohlen für',
   ],
   ean: ['ean', 'barcode', 'gtin', 'ean code', 'codice ean'],
+  roastDate: [
+    'roast date',
+    'roasting date',
+    'roasted on',
+    'roasted',
+    'date roasted',
+    'data di tostatura',
+    'data tostatura',
+    'tostato il',
+    'röstdatum',
+    'geröstet am',
+    'date de torréfaction',
+    'torréfié le',
+    'fecha de tueste',
+    'fecha de tostado',
+    'tostado el',
+    'data de torra',
+    'data da torra',
+  ],
+  bestDate: [
+    'best before',
+    'best before date',
+    'best by',
+    'use by',
+    'expiry',
+    'expiry date',
+    'expiration date',
+    'da consumarsi entro',
+    'da consumarsi preferibilmente entro',
+    'da consumare entro',
+    'scadenza',
+    'tmc',
+    'mindestens haltbar bis',
+    'haltbar bis',
+    'mhd',
+    'à consommer de préférence avant',
+    'à consommer avant',
+    'ddm',
+    'dluo',
+    'consumir preferentemente antes de',
+    'consumir antes de',
+    'fecha de caducidad',
+    'consumir de preferência antes de',
+    'validade',
+  ],
 };
 
 const LABEL_TO_FIELD = new Map<string, Field>();
@@ -406,6 +462,55 @@ export function parseRoastingType(text: string | undefined): RoastingType | unde
   return undefined;
 }
 
+/** Month names and abbreviations in the page languages, to month numbers. */
+const MONTHS = new Map<string, number>();
+[
+  ['january', 'jan', 'gennaio', 'gen', 'januar', 'jän', 'janvier', 'janv', 'enero', 'ene', 'janeiro'],
+  ['february', 'feb', 'febbraio', 'februar', 'février', 'févr', 'fév', 'febrero', 'fevereiro', 'fev'],
+  ['march', 'mar', 'marzo', 'märz', 'mär', 'mars', 'março'],
+  ['april', 'apr', 'aprile', 'avril', 'avr', 'abril', 'abr'],
+  ['may', 'maggio', 'mag', 'mai', 'mayo', 'maio'],
+  ['june', 'jun', 'giugno', 'giu', 'juni', 'juin', 'junio', 'junho'],
+  ['july', 'jul', 'luglio', 'lug', 'juli', 'juillet', 'juil', 'julio', 'julho'],
+  ['august', 'aug', 'agosto', 'ago', 'août', 'aout'],
+  ['september', 'sep', 'sept', 'settembre', 'set', 'septembre', 'septiembre', 'setembro'],
+  ['october', 'oct', 'ottobre', 'ott', 'oktober', 'okt', 'octobre', 'octubre', 'outubro', 'out'],
+  ['november', 'nov', 'novembre', 'noviembre', 'novembro'],
+  ['december', 'dec', 'dicembre', 'dic', 'dezember', 'dez', 'décembre', 'déc', 'diciembre', 'dezembro'],
+].forEach((names, i) => names.forEach((name) => MONTHS.set(name, i + 1)));
+
+function day(year: number, month: number, date: number): string | undefined {
+  const y = year < 100 ? 2000 + year : year;
+  if (y < 2000 || y > 2100 || month < 1 || month > 12 || date < 1 || date > 31) return undefined;
+  const d = new Date(y, month - 1, date);
+  if (d.getMonth() !== month - 1) return undefined; // 31 April and the like.
+  return isoFromLocalDay(`${y}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`);
+}
+
+/**
+ * A calendar day from "2026-09-25", "25/09/2026", "25.09.26", "25 September 2026" or
+ * "September 25, 2026", as the ISO timestamp of its local midnight. Numeric dates are
+ * read day first, as European roasters write them, unless only month first makes sense.
+ */
+export function parseDate(text: string | undefined): string | undefined {
+  if (!text) return undefined;
+  const t = text.toLowerCase();
+  const iso = t.match(/\b(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
+  if (iso) return day(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+  const numeric = t.match(/\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})\b/);
+  if (numeric) {
+    const [a, b, y] = [Number(numeric[1]), Number(numeric[2]), Number(numeric[3])];
+    return a <= 12 && b > 12 ? day(y, a, b) : day(y, b, a);
+  }
+  const words = /(\d{1,2})(?:st|nd|rd|th|º|°|\.)?\s+(?:de\s+)?([\p{L}]+)\.?,?\s+(?:de\s+)?(\d{4})/u.exec(t);
+  const wordsMonth = words?.[2] && MONTHS.get(words[2]);
+  if (words && wordsMonth) return day(Number(words[3]), wordsMonth, Number(words[1]));
+  const us = /([\p{L}]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/u.exec(t);
+  const usMonth = us?.[1] && MONTHS.get(us[1]);
+  if (us && usMonth) return day(Number(us[3]), usMonth, Number(us[2]));
+  return undefined;
+}
+
 const DECAF = /\bdecaf|decaffeinat|entkoffeiniert|descafeinado|décaféiné|deca\b/i;
 
 function htmlToText(html: string): string {
@@ -465,6 +570,20 @@ function fromShopify(product: ShopifyProduct, url: URL): { bean: Partial<SharedB
   return { bean, prose: htmlToText(product.body_html ?? '') };
 }
 
+/** A date written right after one of `field`'s labels, even without a colon ("Roasted on 12 May 2026"). */
+function inlineDate(text: string, field: 'roastDate' | 'bestDate'): string | undefined {
+  const labels = [...LABELS[field]].sort((a, b) => b.length - a.length).map(escapeRegExp);
+  const pattern = new RegExp(
+    String.raw`(?<![\p{L}\p{N}])(?:${labels.join('|')})\s*[:：]?\s*(.{6,40})`,
+    'giu',
+  );
+  for (const match of plain(text.replace(/\n/g, ' \n ')).matchAll(pattern)) {
+    const date = parseDate(match[1]);
+    if (date) return date;
+  }
+  return undefined;
+}
+
 function fromText(text: string): { bean: Partial<SharedBean>; origin: SharedOrigin } {
   const fields = labelledFields(text);
   const origin: SharedOrigin = {};
@@ -477,6 +596,8 @@ function fromText(text: string): { bean: Partial<SharedBean>; origin: SharedOrig
     cost: parsePrice(fields.cost),
     bean_roasting_type: parseRoastingType(fields.roastingType),
     ean_article_number: fields.ean && /^\d{8,14}$/.test(fields.ean) ? fields.ean : undefined,
+    roastingDate: parseDate(fields.roastDate) ?? inlineDate(text, 'roastDate'),
+    bestDate: parseDate(fields.bestDate) ?? inlineDate(text, 'bestDate'),
   };
   return { bean, origin };
 }

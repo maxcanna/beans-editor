@@ -22,6 +22,7 @@ const root = protobuf.Root.fromJSON({
     BeanProto: {
       fields: {
         name: { type: 'string', id: 1 },
+        buyDate: { type: 'string', id: 2 },
         roastingDate: { type: 'string', id: 3 },
         note: { type: 'string', id: 4 },
         roaster: { type: 'string', id: 5 },
@@ -57,6 +58,7 @@ function readLink(link: string) {
 const bean: SharedBean = {
   name: 'Guji Natural – café',
   roaster: 'Example Roasters',
+  buyDate: '2026-09-03T00:00:00.000Z',
   roastingDate: '2026-09-01T00:00:00.000Z',
   note: 'Juicy',
   roast: 'CITY_PLUS_ROAST',
@@ -85,6 +87,18 @@ describe('bean links', () => {
       beanMix: 1,
       bean_roasting_type: 1,
     });
+  });
+
+  it('leaves out the best before date and freezing details, which BeanProto has no fields for', () => {
+    const frozen: SharedBean = {
+      ...bean,
+      bestDate: '2027-03-01T00:00:00.000Z',
+      frozenDate: '2026-09-25T00:00:00.000Z',
+      unfrozenDate: '2026-10-10T00:00:00.000Z',
+      frozenStorageType: 'COFFEE_BAG',
+      frozenNote: 'Top shelf',
+    };
+    expect(encodeBean(frozen)).toEqual(encodeBean(bean));
   });
 
   it('leaves out fields that are not set', () => {

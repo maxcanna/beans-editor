@@ -3,8 +3,14 @@
   import { Dialog } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { beanLink, findSharedUrl, nameFromUrl, type SharedBean } from '../beanlink/bean-link';
-  import { ROASTING_TYPES, type RoastingType } from '../formats/backup/enums';
-  import { ROASTING_TYPE_LABELS } from '../editor/labels';
+  import {
+    FREEZING_STORAGES,
+    ROASTING_TYPES,
+    type FreezingStorage,
+    type RoastingType,
+  } from '../formats/backup/enums';
+  import { isoFromLocalDay, localDay } from '../editor/beans';
+  import { FREEZING_STORAGE_LABELS, ROASTING_TYPE_LABELS } from '../editor/labels';
   import { ReadError, readBean } from '../extract/read';
   import { buttonClass, inputClass, labelClass, primaryButtonClass } from './editor/styles';
 
@@ -31,6 +37,14 @@
     url: string;
     ean: string;
     note: string;
+    /** Dates as local `YYYY-MM-DD` days, for date inputs. */
+    buyDate: string;
+    roastingDate: string;
+    bestDate: string;
+    frozenDate: string;
+    unfrozenDate: string;
+    frozenStorageType: FreezingStorage;
+    frozenNote: string;
     country: string;
     region: string;
     farm: string;
@@ -64,6 +78,13 @@
       url: bean.url ?? '',
       ean: bean.ean_article_number ?? '',
       note: bean.note ?? '',
+      buyDate: localDay(bean.buyDate),
+      roastingDate: localDay(bean.roastingDate),
+      bestDate: localDay(bean.bestDate),
+      frozenDate: localDay(bean.frozenDate),
+      unfrozenDate: localDay(bean.unfrozenDate),
+      frozenStorageType: bean.frozenStorageType ?? 'UNKNOWN',
+      frozenNote: bean.frozenNote ?? '',
       country: origin.country ?? '',
       region: origin.region ?? '',
       farm: origin.farm ?? '',
@@ -93,8 +114,18 @@
       url: f.url.trim() || undefined,
       ean_article_number: f.ean.trim() || undefined,
       note: f.note.trim() || undefined,
+      buyDate: isoFromLocalDay(f.buyDate) || undefined,
+      roastingDate: isoFromLocalDay(f.roastingDate) || undefined,
     };
     if (Object.keys(origin).length > 0) bean.bean_information = [origin];
+    // A link can't carry these (see SharedBean), so only a backup gets them.
+    if (onadd) {
+      bean.bestDate = isoFromLocalDay(f.bestDate) || undefined;
+      bean.frozenDate = isoFromLocalDay(f.frozenDate) || undefined;
+      bean.unfrozenDate = isoFromLocalDay(f.unfrozenDate) || undefined;
+      bean.frozenStorageType = f.frozenStorageType === 'UNKNOWN' ? undefined : f.frozenStorageType;
+      bean.frozenNote = f.frozenNote.trim() || undefined;
+    }
     return bean;
   }
 
@@ -342,6 +373,52 @@
               {m.bean_decaffeinated()}
             </label>
           </div>
+          <fieldset class="grid gap-4 sm:grid-cols-2">
+            <legend class="mb-2 text-sm font-semibold">{m.bean_dates()}</legend>
+            <label class={labelClass}>
+              {m.bean_roast_date()}
+              <input class={inputClass} type="date" bind:value={form.roastingDate} />
+            </label>
+            <label class={labelClass}>
+              {m.bean_buy_date()}
+              <input class={inputClass} type="date" bind:value={form.buyDate} />
+            </label>
+            {#if onadd}
+              <label class={labelClass}>
+                {m.bean_best_date()}
+                <input class={inputClass} type="date" bind:value={form.bestDate} />
+              </label>
+            {:else}
+              <p class="text-sm text-muted sm:col-span-2" data-testid="backup-only-fields">
+                {m.link_backup_only_fields()}
+              </p>
+            {/if}
+          </fieldset>
+          {#if onadd}
+            <fieldset class="grid gap-4 sm:grid-cols-2">
+              <legend class="mb-2 text-sm font-semibold">{m.bean_freezing()}</legend>
+              <label class={labelClass}>
+                {m.bean_frozen_date()}
+                <input class={inputClass} type="date" bind:value={form.frozenDate} />
+              </label>
+              <label class={labelClass}>
+                {m.bean_unfrozen_date()}
+                <input class={inputClass} type="date" bind:value={form.unfrozenDate} />
+              </label>
+              <label class="{labelClass} sm:col-span-2">
+                {m.bean_frozen_storage()}
+                <select class={inputClass} bind:value={form.frozenStorageType}>
+                  {#each Object.keys(FREEZING_STORAGES) as FreezingStorage[] as type (type)}
+                    <option value={type}>{FREEZING_STORAGE_LABELS[type]()}</option>
+                  {/each}
+                </select>
+              </label>
+              <label class="{labelClass} sm:col-span-2">
+                {m.bean_frozen_note()}
+                <textarea class="{inputClass} min-h-16" bind:value={form.frozenNote}></textarea>
+              </label>
+            </fieldset>
+          {/if}
           <fieldset class="grid gap-4 sm:grid-cols-2">
             <legend class="mb-2 text-sm font-semibold">{m.bean_origins()}</legend>
             {#each ORIGIN_FIELDS as field (field.key)}
