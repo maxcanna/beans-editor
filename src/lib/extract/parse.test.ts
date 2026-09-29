@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isoFromLocalDay } from '../editor/beans';
-import { extractBean, labelledFields, parseDate, parsePrice, parseRoastingType, parseWeight } from './parse';
+import { extractBean, labelledFields, parsePrice, parseRoastingType, parseWeight } from './parse';
 
 // Synthetic pages shaped like what Jina Reader returns for real roaster sites.
 const LABELLED_EN = `Title: Colombia Motta Red Bourbon – Guido
@@ -114,31 +113,6 @@ describe('parseRoastingType', () => {
   });
 });
 
-describe('parseDate', () => {
-  const sept25 = isoFromLocalDay('2026-09-25');
-  it('reads numeric dates day first, and ISO dates', () => {
-    expect(parseDate('2026-09-25')).toBe(sept25);
-    expect(parseDate('25/09/2026')).toBe(sept25);
-    expect(parseDate('25.09.26')).toBe(sept25);
-    expect(parseDate('09/25/2026')).toBe(sept25);
-    expect(parseDate('03/04/2026')).toBe(isoFromLocalDay('2026-04-03'));
-  });
-
-  it('reads month names in the page languages', () => {
-    expect(parseDate('25 September 2026')).toBe(sept25);
-    expect(parseDate('September 25th, 2026')).toBe(sept25);
-    expect(parseDate('25 settembre 2026')).toBe(sept25);
-    expect(parseDate('25. Sept. 2026')).toBe(sept25);
-    expect(parseDate('25 de septiembre de 2026')).toBe(sept25);
-  });
-
-  it('ignores text that is not a whole date', () => {
-    expect(parseDate('Every Tuesday')).toBeUndefined();
-    expect(parseDate('09/2027')).toBeUndefined();
-    expect(parseDate('31/04/2026')).toBeUndefined();
-  });
-});
-
 describe('labelledFields', () => {
   it('reads bold labels with colons', () => {
     const fields = labelledFields(LABELLED_EN);
@@ -235,7 +209,7 @@ describe('extractBean', () => {
     expect(bean.bean_information?.[0]?.country).toBe('Honduras');
   });
 
-  it('reads the roast and best before dates', () => {
+  it('leaves the dates to the user', () => {
     const markdown = `Title: Kenya Kiambu – Roaster
 
 Markdown Content:
@@ -245,16 +219,9 @@ Roasted on 15 September 2026, shipped the next day.
 
 | Best before | 15/03/2027 |
 `;
-    expect(extractBean(new URL('https://example.com/kenya'), { markdown })).toMatchObject({
-      roastingDate: isoFromLocalDay('2026-09-15'),
-      bestDate: isoFromLocalDay('2027-03-15'),
-    });
-    const it = extractBean(new URL('https://example.it/elda'), {
-      markdown:
-        'Markdown Content:\n**Data di tostatura:** 12/09/2026\nDa consumarsi preferibilmente entro: 12.03.2027',
-    });
-    expect(it.roastingDate).toBe(isoFromLocalDay('2026-09-12'));
-    expect(it.bestDate).toBe(isoFromLocalDay('2027-03-12'));
+    const bean = extractBean(new URL('https://example.com/kenya'), { markdown });
+    expect(bean.roastingDate).toBeUndefined();
+    expect(bean.bestDate).toBeUndefined();
   });
 
   it('prefers Shopify data, then fills the rest from the description and the page', () => {
