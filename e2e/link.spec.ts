@@ -167,7 +167,7 @@ test('adds the bean to the open backup when started from the editor', async ({ p
 
 const DATED_PAGE = `${PAGE}Roast date: 15/09/2026\nBest before: 15/03/2027\n`;
 
-test('puts the roast and buy dates in the link, but not what the app would drop', async ({ page }) => {
+test('puts the roast date in the link, but not what the app would drop', async ({ page }) => {
   await mockJina(page, DATED_PAGE);
   await page.goto('/');
   await page.getByRole('button', { name: 'Add a bean from a link' }).click();
@@ -175,7 +175,8 @@ test('puts the roast and buy dates in the link, but not what the app would drop'
   await dialog.getByLabel('Product page link').fill(PRODUCT);
 
   await expect(dialog.getByLabel('Roast date')).toHaveValue('2026-09-15');
-  await dialog.getByLabel('Buy date').fill('2026-09-20');
+  // Beanconqueror's Add Bean screen ignores a shared buy date.
+  await expect(dialog.getByLabel('Buy date')).toHaveCount(0);
   await expect(dialog.getByLabel('Best before')).toHaveCount(0);
   await expect(dialog.getByLabel('Freeze date', { exact: true })).toHaveCount(0);
   await expect(dialog.getByTestId('backup-only-fields')).toBeVisible();
@@ -185,7 +186,6 @@ test('puts the roast and buy dates in the link, but not what the app would drop'
   const bytes = Buffer.from(payload, 'base64').toString('latin1');
   const iso = (day: string) => page.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), day);
   expect(bytes).toContain(await iso('2026-09-15'));
-  expect(bytes).toContain(await iso('2026-09-20'));
 });
 
 test('adds dates and freezing details to a backup bean', async ({ page }) => {
@@ -235,4 +235,43 @@ test('offers Download and no Share, which browsers refuse for zip files', async 
   });
   await expect(page.getByRole('button', { name: 'Download backup' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0);
+});
+
+test('reads a shared product page, then opens it in Beanconqueror', async ({ page }) => {
+  let answer: () => void = () => {};
+  const answered = new Promise<void>((resolve) => (answer = resolve));
+  await page.route('https://r.jina.ai/**', async (route) => {
+    await answered;
+    await route.fulfill({ status: 200, body: DATED_PAGE, headers: { 'access-control-allow-origin': '*' } });
+  });
+  const opened = page.waitForRequest((request) => request.url().startsWith('beanconqueror:'));
+  // Where the service worker sends a shared link.
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
+
+  const screen = page.getByTestId('shared-link');
+  await expect(screen.getByTestId('shared-link-reading')).toContainText('Reading roaster.example');
+  answer();
+
+  await expect(screen).toContainText('Colombia Motta');
+  await expect(screen).toContainText('2026-09-15');
+  const bytes = Buffer.from(new URL((await opened).url()).searchParams.get('shareUserBean0')!, 'base64');
+  expect(bytes.toString('latin1')).toContain('Colombia Motta');
+  // Nothing takes over in the test browser, so the page asks for a tap.
+  await expect(screen.getByTestId('open-status')).toContainText('Tap Open in Beanconqueror');
+  await expect(screen.getByTestId('open-in-beanconqueror')).toBeVisible();
+
+  // Desktop Chrome's "Open app?" prompt for the beanconqueror: link holds real input events.
+  await screen.getByRole('button', { name: 'Done' }).dispatchEvent('click');
+  await expect(page.getByTestId('howto')).toBeVisible();
+});
+
+test('sends a shared link with just its name when the page can’t be read', async ({ page }) => {
+  await page.route('https://r.jina.ai/**', (route) =>
+    route.fulfill({ status: 500, body: '', headers: { 'access-control-allow-origin': '*' } }),
+  );
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
+  const screen = page.getByTestId('shared-link');
+  await expect(screen.getByRole('alert')).toContainText("Couldn't read the page");
+  await expect(screen).toContainText('Colombia Motta');
+  await expect(screen.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', /^beanconqueror:/);
 });
