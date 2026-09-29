@@ -122,10 +122,16 @@ test.describe('offline', () => {
 
     const opened = page.waitForRequest((request) => request.url().startsWith('beanconqueror:'));
     await shareText(page, { title: 'Guji', text: 'Look: https://shop.example/products/guji-natural?v=2' });
+    const screen = page.getByTestId('shared-link');
+    await expect(screen).toContainText("You're offline");
+    await expect(screen).toContainText('Guji Natural');
     const link = new URL((await opened).url());
     expect(link.href).toMatch(/^beanconqueror:\/\/ADD_USER_BEAN\?shareUserBean0=/);
     const payload = atob(link.searchParams.get('shareUserBean0') ?? '');
     expect(payload).toContain('Guji Natural');
     expect(payload).toContain('https://shop.example/products/guji-natural?v=2');
+    await expect(screen.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', link.href);
+    // The share parameter is consumed, so a reload doesn't open Beanconqueror again.
+    await expect(page).toHaveURL(/\/$/);
   });
 });
