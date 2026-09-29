@@ -41,7 +41,7 @@ Beans Editor is a static site, deployed to Cloudflare Workers as static assets (
 
 - **Build command:** `yarn build`
 - **Deploy command:** `yarn wrangler deploy`
-- Pushes to `main` deploy to production; other branches get preview URLs on `workers.dev`.
+- Pushes to `master` deploy to production; other branches get Previews. Both are served on custom domains set in the Cloudflare dashboard: the `workers.dev` URLs are turned off in `wrangler.jsonc`.
 
 ### Caching
 
