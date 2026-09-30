@@ -245,7 +245,7 @@ export function filterBeans(beans: readonly BackupRecord[], filter: BeanFilter):
     .sort((a, b) => b.config.unix_timestamp - a.config.unix_timestamp);
 }
 
-/** A new backup bean from what a product page gave (the "Add from link" review form). */
+/** A new backup bean from what a product page gave (the "Add bean from URL" review form). */
 export function beanFromShared(shared: SharedBean, now = Date.now()): BackupRecord {
   const bean: Record<string, unknown> = { ...newBean(now) };
   for (const [key, value] of Object.entries(shared)) {

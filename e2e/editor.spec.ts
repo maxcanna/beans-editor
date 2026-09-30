@@ -79,7 +79,7 @@ test('edits a bean and downloads a backup that keeps everything else', async ({ 
 
 test('adds a bean with the fields the app expects', async ({ page }) => {
   await openBackup(page);
-  await page.getByRole('button', { name: 'Add bean' }).click();
+  await page.getByRole('button', { name: 'Add bean', exact: true }).click();
   const dialog = page.getByTestId('bean-dialog');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog.getByText('Required')).toBeVisible();
