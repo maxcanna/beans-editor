@@ -4,7 +4,7 @@
   import type { BackupRecord } from '../../formats/backup/backup';
   import { applyGearForm, gearForm, type GearKey } from '../../editor/gear';
   import { ERROR_LABELS } from '../../editor/labels';
-  import DeleteNotice from './DeleteNotice.svelte';
+  import ConfirmDelete from './ConfirmDelete.svelte';
   import SheetDialog from './SheetDialog.svelte';
   import { buttonClass, inputClass, labelClass } from './styles';
 
@@ -57,11 +57,12 @@
     <textarea class="{inputClass} min-h-20" bind:value={form.note}></textarea>
   </label>
   {#if confirmingDelete}
-    <DeleteNotice
+    <ConfirmDelete
       blocked={brews > 0 ? m.gear_delete_blocked({ count: brews }) : undefined}
       confirm={m.gear_delete_confirm()}
       onarchive={form.finished ? undefined : toggleArchived}
       {ondelete}
+      oncancel={() => (confirmingDelete = false)}
     />
   {/if}
 

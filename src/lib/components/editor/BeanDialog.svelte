@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { Archive, ArchiveRestore, Trash2, TriangleAlert, X } from '@lucide/svelte';
+  import { Archive, ArchiveRestore, Trash2, X } from '@lucide/svelte';
   import { Dialog } from 'bits-ui';
-  import { tick } from 'svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
   import { applyBeanForm, beanForm, validateBean } from '../../editor/beans';
   import BeanFields from './BeanFields.svelte';
+  import ConfirmDelete from './ConfirmDelete.svelte';
   import { buttonClass as button } from './styles';
 
   interface Props {
@@ -30,7 +30,6 @@
   const shown = $derived(submitted ? errors : {});
 
   let formElement: HTMLFormElement;
-  let deleteNotice = $state<HTMLElement>();
 
   function trySave() {
     submitted = true;
@@ -79,41 +78,6 @@
         }}
       >
         <BeanFields bind:form mode="backup" errors={shown} {maxRating} />
-
-        {#if confirmingDelete}
-          <div
-            bind:this={deleteNotice}
-            role="alert"
-            class="flex gap-3 rounded-xl border border-danger/40 bg-danger/5 p-4 text-sm"
-          >
-            <TriangleAlert class="size-5 shrink-0 text-danger" aria-hidden="true" />
-            <div class="space-y-3">
-              {#if brews > 0}
-                <p>{m.bean_delete_blocked({ count: brews })}</p>
-                {#if !form.finished}
-                  <button
-                    type="button"
-                    class="{button} border border-border bg-surface hover:bg-border/40"
-                    onclick={toggleArchived}
-                  >
-                    <Archive class="size-4" aria-hidden="true" />
-                    {m.bean_archive()}
-                  </button>
-                {/if}
-              {:else}
-                <p>{m.bean_delete_confirm()}</p>
-                <button
-                  type="button"
-                  class="{button} bg-danger text-accent-fg hover:bg-danger/90"
-                  onclick={ondelete}
-                >
-                  <Trash2 class="size-4" aria-hidden="true" />
-                  {m.bean_delete()}
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
       </form>
 
       <footer class="flex items-center gap-1 border-t border-border px-3 py-3 sm:gap-2 sm:px-5 sm:py-4">
@@ -121,11 +85,7 @@
           <button
             type="button"
             class="{button} text-danger hover:bg-danger/10"
-            onclick={async () => {
-              confirmingDelete = true;
-              await tick();
-              deleteNotice?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }}
+            onclick={() => (confirmingDelete = true)}
           >
             <Trash2 class="size-4" aria-hidden="true" />
             <span class="max-sm:sr-only">{m.bean_delete()}</span>
@@ -146,6 +106,16 @@
           {m.bean_save()}
         </button>
       </footer>
+
+      {#if confirmingDelete}
+        <ConfirmDelete
+          blocked={brews > 0 ? m.bean_delete_blocked({ count: brews }) : undefined}
+          confirm={m.bean_delete_confirm()}
+          onarchive={form.finished ? undefined : toggleArchived}
+          {ondelete}
+          oncancel={() => (confirmingDelete = false)}
+        />
+      {/if}
     </Dialog.Content>
   </Dialog.Portal>
 </Dialog.Root>
