@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { Archive, LayoutGrid, Link, Plus, Search, Table } from '@lucide/svelte';
+  import { Archive, LayoutGrid, Link, Plus, Search, SlidersHorizontal, Table } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterBeans, localDay } from '../../editor/beans';
   import { label, ROAST_LABELS } from '../../editor/labels';
+  import { inputClass, labelClass } from './styles';
   import MetaList from './MetaList.svelte';
 
   interface Props {
@@ -33,7 +34,13 @@
   let view = $state<View>(initialView());
   let query = $state('');
   let showArchived = $state(false);
-  const shown = $derived(filterBeans(beans, { query, showArchived }));
+  /** Buy date range, local days. */
+  let from = $state('');
+  let to = $state('');
+  const shown = $derived(filterBeans(beans, { query, showArchived, from, to }));
+  // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
+  let filtersOpen = $state(false);
+  const activeFilters = $derived((from ? 1 : 0) + (to ? 1 : 0));
 
   function setView(next: View) {
     view = next;
@@ -52,12 +59,11 @@
     const value = (bean as Record<string, unknown>)[key];
     return typeof value === 'number' && value > 0 ? value : undefined;
   };
-  const archived = (bean: BackupRecord) => (bean as Record<string, unknown>)['finished'] === true;
-  const date = (bean: BackupRecord) => {
-    const day = localDay((bean as Record<string, unknown>)['roastingDate']);
-    return day ? new Date(`${day}T00:00`).toLocaleDateString() : '';
+  const day = (bean: BackupRecord, key: string) => {
+    const local = localDay((bean as Record<string, unknown>)[key]);
+    return local ? new Date(`${local}T00:00`).toLocaleDateString() : '';
   };
-
+  const archived = (bean: BackupRecord) => (bean as Record<string, unknown>)['finished'] === true;
   const toggle =
     'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-accent';
 </script>
@@ -98,6 +104,16 @@
         bind:value={query}
       />
     </label>
+    <button
+      type="button"
+      class="{toggle} shrink-0 border border-border sm:hidden"
+      aria-expanded={filtersOpen}
+      aria-controls="bean-filters"
+      onclick={() => (filtersOpen = !filtersOpen)}
+    >
+      <SlidersHorizontal class="size-4" aria-hidden="true" />
+      {activeFilters ? m.beans_filters_count({ count: activeFilters }) : m.beans_filters()}
+    </button>
     <label class="flex items-center gap-2 text-sm">
       <input type="checkbox" class="size-4 accent-accent" bind:checked={showArchived} />
       {m.beans_show_archived()}
@@ -124,6 +140,29 @@
     </div>
   </div>
 
+  <div
+    id="bean-filters"
+    class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap"
+  >
+    <label class="{labelClass} sm:w-44">
+      {m.beans_filter_from()}
+      <input class={inputClass} type="date" bind:value={from} />
+    </label>
+    <label class="{labelClass} sm:w-44">
+      {m.beans_filter_to()}
+      <input class={inputClass} type="date" bind:value={to} />
+    </label>
+    {#if activeFilters}
+      <button
+        type="button"
+        class="col-span-2 rounded-full px-3 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+        onclick={() => ((from = ''), (to = ''))}
+      >
+        {m.beans_filter_clear()}
+      </button>
+    {/if}
+  </div>
+
   {#if shown.length === 0}
     <p class="rounded-2xl border border-dashed border-border p-8 text-center text-muted">
       {beans.length === 0 ? m.beans_empty() : m.beans_no_match()}
@@ -148,12 +187,13 @@
                 </span>
               {/if}
             </span>
-            <MetaList class="text-sm text-muted" items={[text(bean, 'roaster'), date(bean)]} />
+            <MetaList class="text-sm text-muted" items={[text(bean, 'roaster'), day(bean, 'roastingDate')]} />
             <MetaList
               class="text-sm text-muted"
               items={[
                 label(ROAST_LABELS, (bean as Record<string, unknown>)['roast']),
                 number(bean, 'weight') && `${number(bean, 'weight')} g`,
+                day(bean, 'buyDate') && m.beans_bought({ date: day(bean, 'buyDate') }),
                 m.beans_brews({ count: brewCount(bean.config.uuid) }),
               ]}
             />
@@ -169,6 +209,7 @@
             <th scope="col" class="min-w-44 px-4 py-3 font-medium">{m.bean_name()}</th>
             <th scope="col" class="min-w-36 px-4 py-3 font-medium">{m.bean_roaster()}</th>
             <th scope="col" class="px-4 py-3 font-medium">{m.bean_roast_date()}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{m.bean_buy_date()}</th>
             <th scope="col" class="px-4 py-3 font-medium">{m.bean_roast()}</th>
             <th scope="col" class="px-4 py-3 text-right font-medium">{m.bean_weight()}</th>
             <th scope="col" class="px-4 py-3 text-right font-medium">{m.bean_rating_short()}</th>
@@ -194,7 +235,8 @@
                 {/if}
               </th>
               <td class="px-4 py-2">{text(bean, 'roaster')}</td>
-              <td class="px-4 py-2 whitespace-nowrap">{date(bean)}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'roastingDate')}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'buyDate')}</td>
               <td class="px-4 py-2 whitespace-nowrap"
                 >{label(ROAST_LABELS, (bean as Record<string, unknown>)['roast'])}</td
               >
