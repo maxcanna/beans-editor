@@ -30,12 +30,44 @@ async function mockJina(page: Page, body = PAGE) {
   );
 }
 
-test('reads a pasted product link and opens the bean in Beanconqueror', async ({ page }) => {
+/** Opens a backup, then "Add bean from URL" in its editor. */
+async function openFromEditor(page: Page) {
+  await page.goto('/');
+  await page.getByTestId('file-input').setInputFiles({
+    name: 'Beanconqueror.zip',
+    mimeType: 'application/zip',
+    buffer: backupZip(),
+  });
+  await page.getByRole('button', { name: 'Add bean from URL' }).click();
+  const dialog = page.getByTestId('add-from-link');
+  await expect(dialog.getByRole('heading', { name: 'Add a bean from a URL' })).toBeVisible();
+  return dialog;
+}
+
+test('shows Add bean from URL on the home screen only on touch devices', async ({ page, isMobile }) => {
   await mockJina(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
+  const button = page.getByRole('button', { name: 'Add bean from URL' });
+  if (!isMobile) {
+    await expect(page.getByTestId('howto')).toBeVisible();
+    await expect(button).toBeHidden();
+    return;
+  }
+  await button.click();
   const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill(PRODUCT);
+  await dialog.getByLabel('Product page URL').fill(PRODUCT);
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await expect(dialog.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', /^beanconqueror:/);
+});
+
+test('offers Add bean from URL in the backup editor on every device', async ({ page }) => {
+  await openFromEditor(page);
+});
+
+test('reads a shared product page and opens the bean in Beanconqueror', async ({ page }) => {
+  await mockJina(page);
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
+  const dialog = page.getByTestId('add-from-link');
 
   await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
   await expect(dialog.getByLabel('Roaster')).toHaveValue('Guido');
@@ -53,10 +85,8 @@ test('reads a pasted product link and opens the bean in Beanconqueror', async ({
 
 async function reviewBean(page: Page) {
   await mockJina(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
   const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill(PRODUCT);
   return dialog;
 }
 
@@ -86,21 +116,17 @@ test('starts reading as soon as a link is pasted', async ({ page, context, brows
   test.skip(browserName !== 'chromium', 'clipboard permissions are Chromium-only');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockJina(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
-  const dialog = page.getByTestId('add-from-link');
+  const dialog = await openFromEditor(page);
   await page.evaluate((text) => navigator.clipboard.writeText(text), PRODUCT);
-  await dialog.getByLabel('Product page link').focus();
+  await dialog.getByLabel('Product page URL').focus();
   await page.keyboard.press('ControlOrMeta+V');
   await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
 });
 
 test('says when the shop page is gone and lets the bean be filled in by hand', async ({ page }) => {
   await mockJina(page, 'Warning: Target URL returned error 404: Not Found');
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
-  const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill('https://roaster.example/products/ethiopia-guji');
+  const dialog = await openFromEditor(page);
+  await dialog.getByLabel('Product page URL').fill('https://roaster.example/products/ethiopia-guji');
   await expect(dialog.getByRole('alert')).toContainText('no longer exists');
 
   await dialog.getByRole('button', { name: 'Fill in by hand' }).click();
@@ -115,11 +141,9 @@ test('reads a typed link without a button and shows that it is reading', async (
     await held;
     await route.fulfill({ status: 200, body: PAGE, headers: { 'access-control-allow-origin': '*' } });
   });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
-  const dialog = page.getByTestId('add-from-link');
+  const dialog = await openFromEditor(page);
   await expect(dialog.getByRole('button', { name: 'Read page' })).toHaveCount(0);
-  await dialog.getByLabel('Product page link').pressSequentially(PRODUCT);
+  await dialog.getByLabel('Product page URL').pressSequentially(PRODUCT);
   await expect(dialog.getByTestId('link-reading')).toContainText('Reading roaster.example');
   await expect(dialog.getByRole('button', { name: 'Skip, fill in by hand' })).toBeVisible();
   release();
@@ -133,10 +157,8 @@ test('offers Try again after a failed read', async ({ page }) => {
       ? route.fulfill({ status: 500, body: 'boom', headers: { 'access-control-allow-origin': '*' } })
       : route.fulfill({ status: 200, body: PAGE, headers: { 'access-control-allow-origin': '*' } }),
   );
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
   const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill(PRODUCT);
   await expect(dialog.getByRole('alert')).toBeVisible();
   await dialog.getByRole('button', { name: 'Try again' }).click();
   await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
@@ -144,15 +166,8 @@ test('offers Try again after a failed read', async ({ page }) => {
 
 test('adds the bean to the open backup when started from the editor', async ({ page }) => {
   await mockJina(page);
-  await page.goto('/');
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'Beanconqueror.zip',
-    mimeType: 'application/zip',
-    buffer: backupZip(),
-  });
-  await page.getByRole('button', { name: 'From link' }).click();
-  const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill(PRODUCT);
+  const dialog = await openFromEditor(page);
+  await dialog.getByLabel('Product page URL').fill(PRODUCT);
   await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
   await expect(dialog.getByTestId('open-in-beanconqueror')).toHaveCount(0);
   await expect(dialog.getByText("Your backup isn't changed.")).toHaveCount(0);
@@ -170,10 +185,8 @@ const PAGE_WITH_DATES = `${PAGE}Roast date: 15/09/2026\nBest before: 15/03/2027\
 
 test('puts the roast date in the link, but not what the app would drop', async ({ page }) => {
   await mockJina(page, PAGE_WITH_DATES);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add a bean from a link' }).click();
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
   const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill(PRODUCT);
 
   await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
   await expect(dialog.getByLabel('Roast date')).toHaveValue('');
@@ -193,15 +206,8 @@ test('puts the roast date in the link, but not what the app would drop', async (
 
 test('adds dates and freezing details to a backup bean', async ({ page }) => {
   await mockJina(page, PAGE_WITH_DATES);
-  await page.goto('/');
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'Beanconqueror.zip',
-    mimeType: 'application/zip',
-    buffer: backupZip(),
-  });
-  await page.getByRole('button', { name: 'From link' }).click();
-  const dialog = page.getByTestId('add-from-link');
-  await dialog.getByLabel('Product page link').fill(PRODUCT);
+  const dialog = await openFromEditor(page);
+  await dialog.getByLabel('Product page URL').fill(PRODUCT);
 
   await expect(dialog.getByLabel('Best before')).toHaveValue('');
   await dialog.getByLabel('Roast date').fill('2026-09-15');

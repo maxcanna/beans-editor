@@ -4,21 +4,20 @@
   import type { BackupRecord } from '../../formats/backup/backup';
   import { applyGearForm, gearForm, type GearKey } from '../../editor/gear';
   import { ERROR_LABELS } from '../../editor/labels';
-  import DeleteNotice from './DeleteNotice.svelte';
+  import ConfirmDelete from './ConfirmDelete.svelte';
   import SheetDialog from './SheetDialog.svelte';
   import { buttonClass, inputClass, labelClass } from './styles';
 
   interface Props {
     kind: GearKey;
     record: BackupRecord;
-    isNew: boolean;
     brews: number;
     onsave: (record: BackupRecord) => void;
     ondelete: () => void;
     onclose: () => void;
   }
 
-  let { kind, record, isNew, brews, onsave, ondelete, onclose }: Props = $props();
+  let { kind, record, brews, onsave, ondelete, onclose }: Props = $props();
 
   // Mounted per record, so the form starts from the record it was opened with.
   // svelte-ignore state_referenced_locally
@@ -27,9 +26,7 @@
   let confirmingDelete = $state(false);
   const nameError = $derived(submitted && form.name.trim() === '' ? ERROR_LABELS.required() : undefined);
 
-  const title = $derived(
-    kind === 'PREPARATION' ? m.gear_edit_method() : isNew ? m.gear_new_grinder() : m.gear_edit_grinder(),
-  );
+  const title = $derived(kind === 'PREPARATION' ? m.gear_edit_method() : m.gear_edit_grinder());
 
   function save() {
     submitted = true;
@@ -60,34 +57,33 @@
     <textarea class="{inputClass} min-h-20" bind:value={form.note}></textarea>
   </label>
   {#if confirmingDelete}
-    <DeleteNotice
+    <ConfirmDelete
       blocked={brews > 0 ? m.gear_delete_blocked({ count: brews }) : undefined}
       confirm={m.gear_delete_confirm()}
       onarchive={form.finished ? undefined : toggleArchived}
       {ondelete}
+      oncancel={() => (confirmingDelete = false)}
     />
   {/if}
 
   {#snippet footer()}
-    {#if !isNew}
-      <button
-        type="button"
-        class="{buttonClass} text-danger hover:bg-danger/10"
-        onclick={() => (confirmingDelete = true)}
-      >
-        <Trash2 class="size-4" aria-hidden="true" />
-        <span class="max-sm:sr-only">{m.bean_delete()}</span>
-      </button>
-      <button type="button" class="{buttonClass} hover:bg-border/40" onclick={toggleArchived}>
-        {#if form.finished}
-          <ArchiveRestore class="size-4" aria-hidden="true" />
-          <span class="max-sm:sr-only">{m.bean_unarchive()}</span>
-        {:else}
-          <Archive class="size-4" aria-hidden="true" />
-          <span class="max-sm:sr-only">{m.bean_archive()}</span>
-        {/if}
-      </button>
-    {/if}
+    <button
+      type="button"
+      class="{buttonClass} text-danger hover:bg-danger/10"
+      onclick={() => (confirmingDelete = true)}
+    >
+      <Trash2 class="size-4" aria-hidden="true" />
+      <span class="max-sm:sr-only">{m.bean_delete()}</span>
+    </button>
+    <button type="button" class="{buttonClass} hover:bg-border/40" onclick={toggleArchived}>
+      {#if form.finished}
+        <ArchiveRestore class="size-4" aria-hidden="true" />
+        <span class="max-sm:sr-only">{m.bean_unarchive()}</span>
+      {:else}
+        <Archive class="size-4" aria-hidden="true" />
+        <span class="max-sm:sr-only">{m.bean_archive()}</span>
+      {/if}
+    </button>
     <span class="flex-1"></span>
   {/snippet}
 </SheetDialog>
