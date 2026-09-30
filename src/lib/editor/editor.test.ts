@@ -303,6 +303,21 @@ describe('filterBeans', () => {
     expect(between('2025-05-01', '')).toEqual([]);
   });
 
+  it('limits beans to a roast date range the same way', () => {
+    const dated = [
+      bean('mar', { roastingDate: isoFromLocalDay('2025-03-10'), buyDate: isoFromLocalDay('2025-01-05') }),
+      bean('apr', { roastingDate: isoFromLocalDay('2025-04-10'), buyDate: isoFromLocalDay('2025-01-06') }),
+      bean('none'),
+    ].map((b, i) => ({ ...b, config: { uuid: b.config.uuid, unix_timestamp: i } }));
+    const roasted = (roastFrom: string, roastTo: string, from = '', to = '') =>
+      ids(filterBeans(dated, { query: '', showArchived: false, roastFrom, roastTo, from, to }));
+    expect(roasted('2025-03-10', '2025-03-10')).toEqual(['mar']);
+    expect(roasted('2025-03-11', '')).toEqual(['apr']);
+    expect(roasted('', '2025-05-01')).toEqual(['apr', 'mar']);
+    // Both ranges have to hold.
+    expect(roasted('2025-03-01', '2025-04-30', '2025-01-06', '')).toEqual(['apr']);
+  });
+
   it('matches every word across name, roaster and origins', () => {
     expect(ids(filterBeans(beans, { query: 'south kenya', showArchived: false }))).toEqual(['new']);
     expect(ids(filterBeans(beans, { query: 'north kenya', showArchived: false }))).toEqual([]);
