@@ -1,5 +1,4 @@
 import type { BackupRecord } from '../formats/backup/backup';
-import { newConfig } from './records';
 
 /** Grinders (MILL) and methods (PREPARATION) share the fields the editor shows. */
 export type GearKey = 'MILL' | 'PREPARATION';
@@ -24,23 +23,6 @@ export function applyGearForm(record: BackupRecord, form: GearForm): BackupRecor
     if (form[key] !== before[key]) out[key] = form[key];
   }
   return out as BackupRecord;
-}
-
-/**
- * A grinder as `new Mill()` creates it (src/classes/mill/mill.ts). Methods
- * aren't created here: the app builds them with brew-parameter settings that
- * only it knows how to fill in.
- */
-export function newMill(now = Date.now()): BackupRecord {
-  return {
-    name: '',
-    note: '',
-    config: newConfig(now),
-    finished: false,
-    attachments: [],
-    has_adjustable_speed: true,
-    has_timer: true,
-  };
 }
 
 export function filterGear(

@@ -4,7 +4,7 @@ Edit [Beanconqueror](https://beanconqueror.com) backups (`.zip`) right in your b
 
 ## Features
 
-- Add, edit, archive and delete beans; edit and delete brews; edit grinders and methods, and add grinders.
+- Add, edit, archive and delete beans; edit and delete brews; edit grinders and methods.
 - Records you don't touch are written back exactly as they were.
 - Unsaved work is kept in the browser, so a reload or a closed tab loses nothing.
 - Installable PWA that works fully offline.

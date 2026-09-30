@@ -29,11 +29,11 @@ Rules:
 ## 2. Features
 
 - **Open files**: file picker, drag and drop, and the Android share target. A file is judged by its contents, not its name; anything that isn't a backup gets a message saying how to export one from the app.
-- **Full add, edit and delete** on beans, green beans, brews, grinders and methods in a backup. New records get a fresh UUID plus `config.unix_timestamp`.
+- **Full add, edit and delete** on beans, green beans and brews in a backup, and edit and delete on grinders and methods (new grinders and methods are created in the Beanconqueror app, which fills in settings only it knows). New records get a fresh UUID plus `config.unix_timestamp`.
 - **Deleting a bean that brews point to is blocked.** The app offers to archive it instead. The same guard applies to grinders and methods.
 - **Merging**: add another backup's records into the open backup. Duplicates are matched by UUID, or by name + roaster.
-- **Views**: a cards/grid toggle. Phones start in cards and desktops in the grid, and the app remembers the choice. Both views are virtualized, so thousands of brews stay smooth.
-- **Filters**: text search, show or hide archived, and per-type filters (roaster, bean, method, grinder, date range). The grid also sorts.
+- **Views**: a cards/grid toggle shared by Beans and Brews. Phones start in cards and desktops in the grid, and the app remembers the choice. Both views are virtualized, so thousands of brews stay smooth.
+- **Filters**: text search, Show archived and Show frozen switches (frozen shows only beans in the freezer), and per-type filters (roaster, bean, method, grinder, date range). The grid also sorts.
 - **Validation**: each field is checked as you type, and a summary of problems is shown before export.
 - **Output**: Download only. There is no Share button: Chromium's Web Share, including Chrome on Android, refuses zip files (it only shares images, media, PDF and text). No cloud API keys.
 - **Bean from a URL** (flows 1 and 4): Jina Reader fetches the page (it's the CORS bridge), Shopify product pages also get the shop's product JSON, and rules pull out labelled lines (country, altitude, process…; never dates) in English, Italian, German, French, Spanish and Portuguese (`src/lib/extract`). There is no AI pass for now; what isn't found stays blank on the review form. It needs the network, so it's disabled offline; flow 1 then falls back to a bean named after the link.
