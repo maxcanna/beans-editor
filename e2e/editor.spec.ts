@@ -349,8 +349,9 @@ test('blocks deleting a bean that brews use and offers to archive it', async ({ 
   await page.getByRole('button', { name: /Finca Example/ }).click();
   const dialog = page.getByTestId('bean-dialog');
   await dialog.getByRole('button', { name: 'Delete' }).click();
-  await expect(dialog.getByRole('alert')).toContainText("can't be deleted because brews use it (brews: 1)");
-  await dialog.getByRole('alert').getByRole('button', { name: 'Archive' }).click();
+  const confirm = page.getByTestId('confirm-delete');
+  await expect(confirm).toContainText("can't be deleted because brews use it (brews: 1)");
+  await confirm.getByRole('button', { name: 'Archive' }).click();
   await expect(dialog).toBeHidden();
 
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeHidden();
@@ -363,7 +364,9 @@ test('deletes a bean no brew uses', async ({ page }) => {
   await page.getByRole('button', { name: /Unused Lot/ }).click();
   const dialog = page.getByTestId('bean-dialog');
   await dialog.getByRole('button', { name: 'Delete' }).click();
-  await dialog.getByRole('alert').getByRole('button', { name: 'Delete' }).click();
+  const confirm = page.getByTestId('confirm-delete');
+  await expect(page.getByRole('alertdialog')).toContainText('Delete this bean?');
+  await confirm.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByRole('button', { name: /Unused Lot/ })).toBeHidden();
   await expect(page.getByTestId('backup-editor')).toContainText('Beans: 1');
 });
@@ -469,7 +472,9 @@ test('edits a brew and deletes another', async ({ page }) => {
 
   await page.getByRole('listitem').filter({ hasText: 'Unused Lot' }).getByRole('button').click();
   await dialog.getByRole('button', { name: 'Delete' }).click();
-  await dialog.getByRole('alert').getByRole('button', { name: 'Delete' }).click();
+  const confirm = page.getByTestId('confirm-delete');
+  await expect(confirm).toContainText('Delete this');
+  await confirm.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByRole('tab', { name: 'Brews (1)' })).toBeVisible();
 
   const brews = (await downloadBackup(page))['BREWS'];
@@ -504,7 +509,10 @@ test('guards grinders and methods that brews use, and offers no way to add a gri
 
   await page.getByRole('button', { name: /^Grinder/ }).click();
   await dialog.getByRole('button', { name: 'Delete' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('brews use it (brews: 1)');
+  await expect(page.getByTestId('confirm-delete')).toContainText('brews use it (brews: 1)');
+  await page.getByTestId('confirm-delete').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByTestId('confirm-delete')).toBeHidden();
+  await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancel' }).last().click();
 
   await page.getByRole('tab', { name: 'Methods (1)' }).click();
