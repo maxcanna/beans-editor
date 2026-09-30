@@ -44,10 +44,23 @@ async function openFromEditor(page: Page) {
   return dialog;
 }
 
-test('offers Add bean from URL only in the backup editor, not on the home screen', async ({ page }) => {
+test('shows Add bean from URL on the home screen only on touch devices', async ({ page, isMobile }) => {
+  await mockJina(page);
   await page.goto('/');
-  await expect(page.getByTestId('howto')).toBeVisible();
-  await expect(page.getByRole('button', { name: /from (a )?(URL|link)/i })).toHaveCount(0);
+  const button = page.getByRole('button', { name: 'Add bean from URL' });
+  if (!isMobile) {
+    await expect(page.getByTestId('howto')).toBeVisible();
+    await expect(button).toBeHidden();
+    return;
+  }
+  await button.click();
+  const dialog = page.getByTestId('add-from-link');
+  await dialog.getByLabel('Product page URL').fill(PRODUCT);
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await expect(dialog.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', /^beanconqueror:/);
+});
+
+test('offers Add bean from URL in the backup editor on every device', async ({ page }) => {
   await openFromEditor(page);
 });
 

@@ -10,7 +10,7 @@
   "howto_open_title": "Open a backup file",
   "howto_open_body": "Export a backup from Beanconqueror and save it, then tap Open file above or drop the zip on this page.",
   "howto_link_title": "Add a bean from a shop page",
-  "howto_link_body": "On the roaster's product page, share its URL with Beans Editor. Beanconqueror opens its Add Bean screen, filled in and ready to save. While editing a backup, tap Add bean from URL to add it there instead.",
+  "howto_link_body": "On the roaster's product page, share its URL with Beans Editor, or tap Add bean from URL and paste it. Beanconqueror opens its Add Bean screen, filled in and ready to save.",
   "howto_finish": "When you finish editing, download the backup and import it in Beanconqueror from Settings, Transfer data, Import.",
   "privacy_note": "Files never leave your device.",
   "source_link": "Open source on GitHub",
