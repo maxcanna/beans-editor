@@ -1,5 +1,6 @@
 import type { BackupData, BackupRecord } from '../formats/backup/backup';
 import { records } from './records';
+import { sortRecords, type Sort } from './sort';
 
 /**
  * The brew fields the editor shows, under Beanconqueror's names
@@ -161,4 +162,40 @@ export function filterBrews(
       return words.every((w) => haystack.includes(w));
     })
     .sort((a, b) => b.config.unix_timestamp - a.config.unix_timestamp);
+}
+
+export type BrewSortKey = 'when' | 'bean' | 'method' | 'mill' | 'dose' | 'water' | 'rating';
+
+/** Brews ordered by a table column; without a sort they stay as they are. */
+export function sortBrews(
+  brews: readonly BackupRecord[],
+  names: ReadonlyMap<string, string>,
+  sort: Sort<BrewSortKey> | null,
+): BackupRecord[] {
+  const name = (brew: BackupRecord, key: string) => {
+    const uuid = field(brew, key);
+    return typeof uuid === 'string' && uuid ? (names.get(uuid) ?? null) || null : null;
+  };
+  const amount = (brew: BackupRecord, key: string) => {
+    const value = field(brew, key);
+    return typeof value === 'number' && value > 0 ? value : null;
+  };
+  return sortRecords(brews, sort, (brew, key) => {
+    switch (key) {
+      case 'when':
+        return brew.config.unix_timestamp;
+      case 'bean':
+        return name(brew, 'bean');
+      case 'method':
+        return name(brew, 'method_of_preparation');
+      case 'mill':
+        return name(brew, 'mill');
+      case 'dose':
+        return amount(brew, 'grind_weight');
+      case 'water':
+        return amount(brew, 'brew_quantity');
+      case 'rating':
+        return amount(brew, 'rating');
+    }
+  });
 }

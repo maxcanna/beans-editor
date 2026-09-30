@@ -3,9 +3,8 @@
   import { Tabs } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { writeBackup, type BackupRecord } from '../../formats/backup/backup';
-  import { beanFromShared, newBean } from '../../editor/beans';
+  import { newBean } from '../../editor/beans';
   import { nameIndex } from '../../editor/brews';
-  import { newMill } from '../../editor/gear';
   import { download, outputName } from '../../editor/output';
   import {
     addRecord,
@@ -198,7 +197,6 @@
           items={records(data, 'MILL')}
           brewCount={(uuid) => brewsUsing(data, 'MILL', uuid)}
           onopen={(uuid) => openRecord('MILL', uuid)}
-          onadd={() => (editing = { key: 'MILL', record: newMill(), isNew: true })}
         />
       {/if}
     </Tabs.Content>
@@ -245,7 +243,6 @@
       <GearDialog
         kind={key}
         {record}
-        {isNew}
         {brews}
         onsave={saveRecord}
         ondelete={deleteEditing}
@@ -258,9 +255,10 @@
 {#if addingFromLink}
   {#await loadAddFromLink() then { default: AddFromLink }}
     <AddFromLink
+      {maxRating}
       onclose={() => (addingFromLink = false)}
       onadd={(bean) => {
-        session.update((d) => addRecord(d, 'BEANS', beanFromShared(bean)));
+        session.update((d) => addRecord(d, 'BEANS', bean));
         addingFromLink = false;
       }}
     />

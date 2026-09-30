@@ -80,10 +80,16 @@
 
   const SOURCE_URL = 'https://github.com/maxcanna/beans-editor';
 
+  /** What the home screen says, per device: sharing from another app only exists on a phone or tablet. */
   const howto = [
-    { icon: Share2, title: m.howto_share_title(), body: m.howto_share_body() },
+    { icon: Share2, title: m.howto_share_title(), body: m.howto_share_body(), touchOnly: true },
     { icon: FolderOpen, title: m.howto_open_title(), body: m.howto_open_body() },
-    { icon: Link, title: m.howto_link_title(), body: m.howto_link_body() },
+    {
+      icon: Link,
+      title: m.howto_link_title(),
+      body: m.howto_link_body(),
+      desktopBody: m.howto_link_body_desktop(),
+    },
   ];
 
   const banner = 'flex flex-wrap items-center gap-3 rounded-2xl border p-4 text-sm';
@@ -149,23 +155,34 @@
 
       <DropZone onfile={async (file) => open(await readLocalFile(file))} />
 
+      <!-- Only on touch devices, where a URL comes from the share sheet or the clipboard. -->
       <button
         type="button"
-        class="inline-flex items-center justify-center gap-2 self-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        class="hidden items-center justify-center gap-2 self-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent touch:inline-flex"
         onclick={() => (addingFromLink = true)}
       >
         <Link class="size-4 text-accent" aria-hidden="true" />
-        {m.link_start()}
+        {m.beans_add_link()}
       </button>
 
       <section aria-labelledby="howto-title" class="flex flex-col gap-4" data-testid="howto">
         <h2 id="howto-title" class="font-semibold">{m.howto_title()}</h2>
-        <ul class="grid gap-3 sm:grid-cols-3">
+        <ul class="grid gap-3 mouse:sm:grid-cols-2 touch:sm:grid-cols-3">
           {#each howto as step (step.title)}
-            <li class="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+            <li
+              class={[
+                'flex-col gap-2 rounded-2xl border border-border bg-surface p-4 shadow-sm',
+                step.touchOnly ? 'hidden touch:flex' : 'flex',
+              ]}
+            >
               <step.icon class="size-5 text-accent" aria-hidden="true" />
               <h3 class="text-sm font-semibold">{step.title}</h3>
-              <p class="text-sm text-muted">{step.body}</p>
+              {#if step.desktopBody}
+                <p class="text-sm text-muted touch:hidden">{step.desktopBody}</p>
+                <p class="hidden text-sm text-muted touch:block">{step.body}</p>
+              {:else}
+                <p class="text-sm text-muted">{step.body}</p>
+              {/if}
             </li>
           {/each}
         </ul>

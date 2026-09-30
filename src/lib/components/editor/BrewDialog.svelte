@@ -4,7 +4,7 @@
   import type { BackupRecord } from '../../formats/backup/backup';
   import { applyBrewForm, brewForm, validateBrew, type BrewForm } from '../../editor/brews';
   import { ERROR_LABELS } from '../../editor/labels';
-  import DeleteNotice from './DeleteNotice.svelte';
+  import ConfirmDelete from './ConfirmDelete.svelte';
   import SheetDialog from './SheetDialog.svelte';
   import { buttonClass, inputClass, labelClass } from './styles';
 
@@ -125,7 +125,7 @@
     </label>
   </div>
   {#if confirmingDelete}
-    <DeleteNotice confirm={m.brew_delete_confirm()} {ondelete} />
+    <ConfirmDelete confirm={m.brew_delete_confirm()} {ondelete} oncancel={() => (confirmingDelete = false)} />
   {/if}
 
   {#snippet footer()}
