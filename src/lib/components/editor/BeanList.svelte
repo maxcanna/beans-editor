@@ -11,7 +11,7 @@
     brewCount: (uuid: string) => number;
     onopen: (uuid: string) => void;
     onadd: () => void;
-    /** Opens "Add a bean from a link", which hands the bean to Beanconqueror. */
+    /** Opens "Add a bean from a URL", which adds the bean to this backup. */
     onaddlink: () => void;
   }
 
