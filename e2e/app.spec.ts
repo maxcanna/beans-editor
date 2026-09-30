@@ -15,15 +15,29 @@ test('opens a backup from the file picker into the editor', async ({ page }) => 
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
 });
 
-test('explains the three ways to use the app and links to the source', async ({ page }) => {
+test('explains how to use the app on this device and links to the source', async ({ page, isMobile }) => {
   await page.goto('/');
   const howto = page.getByTestId('howto');
-  for (const step of [
-    'Share a backup from Beanconqueror',
-    'Open a backup file',
-    'Add a bean from a shop page',
-  ]) {
-    await expect(howto.getByRole('heading', { name: step })).toBeVisible();
+  const step = (name: string) => howto.getByRole('heading', { name });
+  // Sharing a backup from Beanconqueror only exists on a phone or tablet.
+  if (isMobile) await expect(step('Share a backup from Beanconqueror')).toBeVisible();
+  else await expect(step('Share a backup from Beanconqueror')).toBeHidden();
+  await expect(step('Open a backup file')).toBeVisible();
+  await expect(step('Add a bean from a shop page')).toBeVisible();
+
+  const link = howto.getByRole('listitem').filter({ hasText: 'Add a bean from a shop page' });
+  if (isMobile) {
+    await expect(link).toContainText(
+      'share its URL with Beans Editor, or tap Add bean from URL and paste it',
+      {
+        useInnerText: true,
+      },
+    );
+  } else {
+    await expect(link).toContainText('While editing a backup, click Add bean from URL', {
+      useInnerText: true,
+    });
+    await expect(link).not.toContainText('Beanconqueror opens its Add Bean screen', { useInnerText: true });
   }
   await expect(page.getByRole('link', { name: 'Open source on GitHub' })).toHaveAttribute(
     'href',

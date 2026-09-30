@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 
 /* Phones and tablets: no hover, or a finger for a pointer. Desktops with a mouse don't match. */
+/* The other devices: a mouse or trackpad that hovers and points precisely. */
+@custom-variant mouse (@media not ((hover: none) or (pointer: coarse)));
+
 @custom-variant touch {
   @media (hover: none) {
     @slot;
