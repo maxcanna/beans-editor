@@ -28,13 +28,13 @@ test('explains how to use the app on this device and links to the source', async
   const link = howto.getByRole('listitem').filter({ hasText: 'Add a bean from a shop page' });
   if (isMobile) {
     await expect(link).toContainText(
-      'share its URL with Beans Editor, or tap Add bean from URL and paste it',
+      'share its URL with Beans Editor, or choose Add bean from URL and paste it',
       {
         useInnerText: true,
       },
     );
   } else {
-    await expect(link).toContainText('While editing a backup, click Add bean from URL', {
+    await expect(link).toContainText('While editing a backup, choose Add bean from URL', {
       useInnerText: true,
     });
     await expect(link).not.toContainText('Beanconqueror opens its Add Bean screen', { useInnerText: true });
