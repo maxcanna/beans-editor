@@ -3,9 +3,10 @@ import type { BackupData, BackupRecord } from '../formats/backup/backup';
 import {
   applyBeanForm,
   beanForm,
-  beanFromShared,
+  beanFormFromShared,
   emptyOrigin,
   filterBeans,
+  sharedFromBeanForm,
   isoFromLocalDay,
   localDay,
   newBean,
@@ -115,18 +116,16 @@ describe('beans', () => {
   });
 
   it('turns a bean read from a product page into a new backup bean', () => {
-    const bean = beanFromShared(
-      {
-        name: 'Colombia Motta',
-        roaster: 'Guido',
-        weight: 250,
-        cost: 18.5,
-        bean_roasting_type: 'FILTER',
-        external_images: ['https://roaster.example/bag.jpg'],
-        bean_information: [{ country: 'Colombia', processing: 'Washed' }],
-      },
-      1_700_000_000_500,
-    );
+    const form = beanFormFromShared({
+      name: 'Colombia Motta',
+      roaster: 'Guido',
+      weight: 250,
+      cost: 18.5,
+      bean_roasting_type: 'FILTER',
+      external_images: ['https://roaster.example/bag.jpg'],
+      bean_information: [{ country: 'Colombia', processing: 'Washed' }],
+    });
+    const bean = applyBeanForm(newBean(1_700_000_000_500), form);
     expect(bean.config.unix_timestamp).toBe(1_700_000_000);
     expect(bean).toMatchObject({
       name: 'Colombia Motta',
@@ -160,10 +159,58 @@ describe('beans', () => {
       frozenStorageType: 'COFFEE_BAG',
       frozenNote: 'Top shelf',
     } as const;
-    const bean = beanFromShared({ name: 'Frozen', ...dates });
-    expect(bean).toMatchObject({ ...dates, unfrozenDate: '' });
+    const add = (shared: Parameters<typeof beanFormFromShared>[0]) =>
+      applyBeanForm(newBean(), beanFormFromShared(shared));
+    const bean = add({ name: 'Frozen', ...dates });
+    expect(bean).toMatchObject({
+      ...dates,
+      buyDate: isoFromLocalDay(localDay(dates.buyDate)),
+      roastingDate: isoFromLocalDay(localDay(dates.roastingDate)),
+      bestDate: isoFromLocalDay(localDay(dates.bestDate)),
+      frozenDate: isoFromLocalDay(localDay(dates.frozenDate)),
+      unfrozenDate: '',
+    });
     expect(bean['frozenId']).toMatch(/^[0-9a-j]{6}$/);
-    expect(beanFromShared({ name: 'Fresh' })['frozenId']).toBe('');
+    expect(add({ name: 'Fresh' })['frozenId']).toBe('');
+  });
+
+  it('edits the buy date, best before date and freezing details', () => {
+    const stored = bean('b1', { buyDate: '2025-03-01T00:00:00.000Z', bestDate: '' });
+    const form = beanForm(stored);
+    expect(form.buyDate).toBe(localDay('2025-03-01T00:00:00.000Z'));
+    form.buyDate = '2025-04-02';
+    form.bestDate = '2026-01-31';
+    form.frozenDate = '2025-05-01';
+    form.frozenNote = 'Back shelf';
+    const out = applyBeanForm(stored, form) as Record<string, unknown>;
+    expect(out).toMatchObject({
+      buyDate: isoFromLocalDay('2025-04-02'),
+      bestDate: isoFromLocalDay('2026-01-31'),
+      frozenDate: isoFromLocalDay('2025-05-01'),
+      frozenNote: 'Back shelf',
+    });
+    expect(out['frozenId']).toMatch(/^[0-9a-j]{6}$/);
+    form.buyDate = '';
+    expect(applyBeanForm(stored, form)['buyDate' as never]).toBe('');
+  });
+
+  it('sends only what a link to Beanconqueror can carry', () => {
+    const form = beanFormFromShared({
+      name: ' Motta ',
+      weight: 250,
+      bean_information: [{ country: 'Colombia' }],
+    });
+    form.buyDate = '2026-09-20';
+    form.bestDate = '2027-03-15';
+    form.frozenDate = '2026-09-25';
+    form.rating = 4;
+    form.bean_information.push(emptyOrigin());
+    expect(sharedFromBeanForm(form)).toEqual({
+      name: 'Motta',
+      beanMix: 'SINGLE_ORIGIN',
+      weight: 250,
+      bean_information: [{ country: 'Colombia' }],
+    });
   });
 
   it('validates the form', () => {
@@ -236,9 +283,57 @@ describe('filterBeans', () => {
   ];
   const ids = (list: BackupRecord[]) => list.map((b) => b.config.uuid);
 
+  it('hides beans in the freezer unless asked', () => {
+    const frozen = [
+      bean('ice', { frozenDate: '2025-05-01T10:00:00.000Z', config: { uuid: 'ice', unix_timestamp: 3 } }),
+      bean('thawed', {
+        frozenDate: '2025-05-01T10:00:00.000Z',
+        unfrozenDate: '2025-05-20T10:00:00.000Z',
+        config: { uuid: 'thawed', unix_timestamp: 2 },
+      }),
+      bean('room', { config: { uuid: 'room', unix_timestamp: 1 } }),
+    ];
+    expect(ids(filterBeans(frozen, { query: '', showArchived: false }))).toEqual(['thawed', 'room']);
+    expect(ids(filterBeans(frozen, { query: '', showArchived: false, showFrozen: true }))).toEqual([
+      'ice',
+      'thawed',
+      'room',
+    ]);
+  });
+
   it('hides archived beans unless asked and sorts newest first', () => {
     expect(ids(filterBeans(beans, { query: '', showArchived: false }))).toEqual(['new', 'old']);
     expect(ids(filterBeans(beans, { query: '', showArchived: true }))).toEqual(['gone', 'new', 'old']);
+  });
+
+  it('limits beans to a buy date range, inclusive, leaving out beans without one', () => {
+    const dated = [
+      bean('mar', { buyDate: isoFromLocalDay('2025-03-10'), config: { uuid: 'mar', unix_timestamp: 1 } }),
+      bean('apr', { buyDate: isoFromLocalDay('2025-04-10'), config: { uuid: 'apr', unix_timestamp: 2 } }),
+      bean('none', { config: { uuid: 'none', unix_timestamp: 3 } }),
+    ];
+    const between = (from: string, to: string) =>
+      ids(filterBeans(dated, { query: '', showArchived: false, from, to }));
+    expect(between('', '')).toEqual(['none', 'apr', 'mar']);
+    expect(between('2025-03-10', '2025-04-10')).toEqual(['apr', 'mar']);
+    expect(between('2025-03-11', '')).toEqual(['apr']);
+    expect(between('', '2025-03-31')).toEqual(['mar']);
+    expect(between('2025-05-01', '')).toEqual([]);
+  });
+
+  it('limits beans to a roast date range the same way', () => {
+    const dated = [
+      bean('mar', { roastingDate: isoFromLocalDay('2025-03-10'), buyDate: isoFromLocalDay('2025-01-05') }),
+      bean('apr', { roastingDate: isoFromLocalDay('2025-04-10'), buyDate: isoFromLocalDay('2025-01-06') }),
+      bean('none'),
+    ].map((b, i) => ({ ...b, config: { uuid: b.config.uuid, unix_timestamp: i } }));
+    const roasted = (roastFrom: string, roastTo: string, from = '', to = '') =>
+      ids(filterBeans(dated, { query: '', showArchived: false, roastFrom, roastTo, from, to }));
+    expect(roasted('2025-03-10', '2025-03-10')).toEqual(['mar']);
+    expect(roasted('2025-03-11', '')).toEqual(['apr']);
+    expect(roasted('', '2025-05-01')).toEqual(['apr', 'mar']);
+    // Both ranges have to hold.
+    expect(roasted('2025-03-01', '2025-04-30', '2025-01-06', '')).toEqual(['apr']);
   });
 
   it('matches every word across name, roaster and origins', () => {
