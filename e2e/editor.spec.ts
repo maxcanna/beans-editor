@@ -146,6 +146,111 @@ test('filters beans by buy date', async ({ page }) => {
   await expect(unused).toBeVisible();
 });
 
+test('filters beans by roast date', async ({ page }) => {
+  const data = backupData();
+  data.BEANS[0]!['roastingDate'] = '2026-03-10T12:00:00.000Z';
+  data.BEANS[1]!['roastingDate'] = '2026-04-10T12:00:00.000Z';
+  await openBackup(page, data);
+  const finca = page.getByRole('button', { name: /Finca Example/ });
+  const unused = page.getByRole('button', { name: /Unused Lot/ });
+  const toggle = page.getByRole('button', { name: 'Filters', exact: true });
+  if (await toggle.isVisible()) await toggle.click();
+
+  await page.getByLabel('Roast date from').fill('2026-04-01');
+  await expect(unused).toBeVisible();
+  await expect(finca).toBeHidden();
+  await page.getByLabel('Roast date from').fill('2026-03-01');
+  await page.getByLabel('Roast date to').fill('2026-03-31');
+  await expect(finca).toBeVisible();
+  await expect(unused).toBeHidden();
+
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(finca).toBeVisible();
+  await expect(unused).toBeVisible();
+});
+
+test('sorts the bean table by clicking a column header', async ({ page }) => {
+  await openBackup(page);
+  await page.getByRole('button', { name: 'Grid' }).click();
+  const table = page.getByTestId('bean-grid');
+  const names = () => table.locator('tbody th button').allInnerTexts();
+  // Newest first, until a header is clicked.
+  expect(await names()).toEqual(['Finca Example', 'Unused Lot']);
+
+  const roaster = table.getByRole('columnheader', { name: 'Roaster', exact: true });
+  await expect(roaster).toHaveAttribute('aria-sort', 'none');
+  await roaster.getByRole('button').click();
+  await expect(roaster).toHaveAttribute('aria-sort', 'ascending');
+  expect(await names()).toEqual(['Unused Lot', 'Finca Example']);
+  await roaster.getByRole('button').click();
+  await expect(roaster).toHaveAttribute('aria-sort', 'descending');
+  expect(await names()).toEqual(['Finca Example', 'Unused Lot']);
+
+  // A third click goes back to the default order; another column starts over.
+  await roaster.getByRole('button').click();
+  await expect(roaster).toHaveAttribute('aria-sort', 'none');
+  await table.getByRole('columnheader', { name: 'Name', exact: true }).getByRole('button').click();
+  await expect(roaster).toHaveAttribute('aria-sort', 'none');
+  expect(await names()).toEqual(['Finca Example', 'Unused Lot']);
+});
+
+test('shows brews as cards or as a table that sorts by column', async ({ page }) => {
+  const data = backupData();
+  data.BREWS.push({
+    bean: 'bean-unused',
+    mill: 'mill-1',
+    method_of_preparation: 'prep-1',
+    grind_weight: 18,
+    config: { uuid: 'brew-2', unix_timestamp: 1_700_100_000 },
+  });
+  await openBackup(page, data);
+  await page.getByRole('tab', { name: 'Brews (2)' }).click();
+  await expect(page.getByTestId('brew-cards')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Grid' }).click();
+  const table = page.getByTestId('brew-table');
+  await expect(table).toBeVisible();
+  const beanColumn = () => table.locator('tbody tr:not([aria-hidden]) td:nth-child(2)').allInnerTexts();
+  // Newest first, like the cards.
+  expect(await beanColumn()).toEqual(['Unused Lot', 'Finca Example']);
+
+  const bean = table.getByRole('columnheader', { name: 'Bean', exact: true });
+  await bean.getByRole('button').click();
+  await expect(bean).toHaveAttribute('aria-sort', 'ascending');
+  expect(await beanColumn()).toEqual(['Finca Example', 'Unused Lot']);
+  const dose = table.getByRole('columnheader', { name: 'Dose (g)', exact: true });
+  await dose.getByRole('button').click();
+  await dose.getByRole('button').click();
+  expect(await beanColumn()).toEqual(['Unused Lot', 'Finca Example']);
+
+  // The layout is remembered, and a row opens the brew.
+  await page.reload();
+  await page.getByRole('tab', { name: 'Brews (2)' }).click();
+  await expect(page.getByTestId('brew-table')).toBeVisible();
+  await page
+    .getByTestId('brew-table')
+    .locator('tbody tr', { hasText: 'Finca Example' })
+    .getByRole('button')
+    .click();
+  await expect(page.getByTestId('brew-dialog')).toBeVisible();
+});
+
+test('keeps long brew tables fast too', async ({ page }) => {
+  const data = backupData();
+  data.BREWS = Array.from({ length: 3000 }, (_, i) => ({
+    bean: 'bean-used',
+    mill: 'mill-1',
+    method_of_preparation: 'prep-1',
+    config: { uuid: `brew-${i}`, unix_timestamp: 1_700_000_000 + i * 60 },
+  }));
+  await openBackup(page, data);
+  await page.getByRole('tab', { name: 'Brews (3000)' }).click();
+  await page.getByRole('button', { name: 'Grid' }).click();
+  const rows = page.getByTestId('brew-table').locator('tbody tr:not([aria-hidden])');
+  await expect(rows.first()).toBeVisible();
+  expect(await rows.count()).toBeLessThan(60);
+});
+
 // What each field is called, in the order the dialog shows them.
 const fieldLabels = (dialog: Locator) =>
   dialog.locator('form input, form select, form textarea').evaluateAll((els) =>

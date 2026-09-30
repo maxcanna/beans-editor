@@ -1,43 +1,50 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
+  import { visibleRange } from '../../editor/virtual';
 
   interface Props {
     items: readonly T[];
     /** Every row has this height in pixels, which keeps the maths trivial. */
     rowHeight: number;
+    /** Items side by side in each row, filling it left to right. */
+    columns?: number;
+    /** No frame or dividers: the rows draw their own cards. */
+    plain?: boolean;
     key: (item: T) => string;
     label: string;
-    row: Snippet<[T]>;
+    /** `index` is the item's place in `items`, which tells its column. */
+    row: Snippet<[T, number]>;
   }
 
-  let { items, rowHeight, key, label, row }: Props = $props();
+  let { items, rowHeight, columns = 1, plain = false, key, label, row }: Props = $props();
 
   // Only the rows in view (plus a few either side) are in the DOM, so thousands of brews stay smooth.
-  const OVERSCAN = 8;
   let scrollTop = $state(0);
   let viewport = $state(0);
-  const start = $derived(Math.max(0, Math.floor(scrollTop / rowHeight) - OVERSCAN));
-  const end = $derived(
-    Math.min(items.length, Math.ceil((scrollTop + (viewport || 800)) / rowHeight) + OVERSCAN),
-  );
-  const visible = $derived(items.slice(start, end));
+  const rows = $derived(Math.ceil(items.length / columns));
+  const range = $derived(visibleRange(scrollTop, viewport, rowHeight, rows));
+  const first = $derived(range.start * columns);
+  const visible = $derived(items.slice(first, range.end * columns));
 </script>
 
 <div
-  class="max-h-[70dvh] overflow-y-auto rounded-2xl border border-border bg-surface"
+  class={['max-h-[70dvh] overflow-y-auto', !plain && 'rounded-2xl border border-border bg-surface']}
   bind:clientHeight={viewport}
   onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
 >
-  <ul aria-label={label} class="relative" style:height="{items.length * rowHeight}px">
+  <ul aria-label={label} class="relative" style:height="{rows * rowHeight}px">
     {#each visible as item, i (key(item))}
+      {@const index = first + i}
       <li
-        class="absolute inset-x-0 border-b border-border"
-        style:top="{(start + i) * rowHeight}px"
+        class={['absolute', !plain && 'border-b border-border', columns === 1 && 'inset-x-0']}
+        style:top="{Math.floor(index / columns) * rowHeight}px"
         style:height="{rowHeight}px"
+        style:left={columns > 1 ? `${((index % columns) * 100) / columns}%` : undefined}
+        style:width={columns > 1 ? `${100 / columns}%` : undefined}
         aria-setsize={items.length}
-        aria-posinset={start + i + 1}
+        aria-posinset={index + 1}
       >
-        {@render row(item)}
+        {@render row(item, index)}
       </li>
     {/each}
   </ul>

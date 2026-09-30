@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { Archive, LayoutGrid, Link, Plus, Search, SlidersHorizontal, Table } from '@lucide/svelte';
+  import { Archive, Link, Plus, Search, SlidersHorizontal } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
-  import { filterBeans, localDay } from '../../editor/beans';
+  import { filterBeans, localDay, sortBeans, type BeanSortKey } from '../../editor/beans';
   import { label, ROAST_LABELS } from '../../editor/labels';
+  import { nextSort, type Sort } from '../../editor/sort';
   import { inputClass, labelClass } from './styles';
   import MetaList from './MetaList.svelte';
+  import SortButton from './SortButton.svelte';
+  import ViewToggle from './ViewToggle.svelte';
+  import { loadView, saveView, type View } from './view';
 
   interface Props {
     beans: readonly BackupRecord[];
@@ -18,38 +22,34 @@
 
   let { beans, brewCount, onopen, onadd, onaddlink }: Props = $props();
 
-  type View = 'cards' | 'grid';
   const VIEW_KEY = 'beans-editor:beans-view';
 
-  function initialView(): View {
-    try {
-      const saved = localStorage.getItem(VIEW_KEY);
-      if (saved === 'cards' || saved === 'grid') return saved;
-    } catch {
-      // Storage can be blocked; fall back to the screen size.
-    }
-    return matchMedia('(min-width: 48rem)').matches ? 'grid' : 'cards';
-  }
-
-  let view = $state<View>(initialView());
+  let view = $state<View>(
+    loadView(VIEW_KEY, () => (matchMedia('(min-width: 48rem)').matches ? 'grid' : 'cards')),
+  );
   let query = $state('');
   let showArchived = $state(false);
-  /** Buy date range, local days. */
+  /** Buy date and roast date ranges, local days. */
   let from = $state('');
   let to = $state('');
-  const shown = $derived(filterBeans(beans, { query, showArchived, from, to }));
+  let roastFrom = $state('');
+  let roastTo = $state('');
+  let sort = $state<Sort<BeanSortKey> | null>(null);
+  const shown = $derived(
+    sortBeans(filterBeans(beans, { query, showArchived, from, to, roastFrom, roastTo }), sort),
+  );
   // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
   let filtersOpen = $state(false);
-  const activeFilters = $derived((from ? 1 : 0) + (to ? 1 : 0));
+  const activeFilters = $derived([from, to, roastFrom, roastTo].filter(Boolean).length);
 
   function setView(next: View) {
     view = next;
-    try {
-      localStorage.setItem(VIEW_KEY, next);
-    } catch {
-      // Not remembered, which is fine.
-    }
+    saveView(VIEW_KEY, next);
   }
+
+  const sortOf = (key: BeanSortKey) => (sort?.key === key ? sort.direction : null);
+  const ariaSort = (key: BeanSortKey) =>
+    sort?.key === key ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none';
 
   const text = (bean: BackupRecord, key: string) => {
     const value = (bean as Record<string, unknown>)[key];
@@ -118,32 +118,21 @@
       <input type="checkbox" class="size-4 accent-accent" bind:checked={showArchived} />
       {m.beans_show_archived()}
     </label>
-    <div role="group" aria-label={m.beans_view()} class="flex rounded-full border border-border p-0.5">
-      <button
-        type="button"
-        class={[toggle, view === 'cards' ? 'bg-border/60 font-medium' : 'text-muted']}
-        aria-pressed={view === 'cards'}
-        onclick={() => setView('cards')}
-      >
-        <LayoutGrid class="size-4" aria-hidden="true" />
-        {m.beans_view_cards()}
-      </button>
-      <button
-        type="button"
-        class={[toggle, view === 'grid' ? 'bg-border/60 font-medium' : 'text-muted']}
-        aria-pressed={view === 'grid'}
-        onclick={() => setView('grid')}
-      >
-        <Table class="size-4" aria-hidden="true" />
-        {m.beans_view_grid()}
-      </button>
-    </div>
+    <ViewToggle {view} onchange={setView} />
   </div>
 
   <div
     id="bean-filters"
     class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap"
   >
+    <label class="{labelClass} sm:w-44">
+      {m.beans_filter_roast_from()}
+      <input class={inputClass} type="date" bind:value={roastFrom} />
+    </label>
+    <label class="{labelClass} sm:w-44">
+      {m.beans_filter_roast_to()}
+      <input class={inputClass} type="date" bind:value={roastTo} />
+    </label>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_from()}
       <input class={inputClass} type="date" bind:value={from} />
@@ -156,7 +145,7 @@
       <button
         type="button"
         class="col-span-2 rounded-full px-3 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
-        onclick={() => ((from = ''), (to = ''))}
+        onclick={() => ((from = ''), (to = ''), (roastFrom = ''), (roastTo = ''))}
       >
         {m.beans_filter_clear()}
       </button>
@@ -204,15 +193,59 @@
   {:else}
     <div class="overflow-x-auto rounded-2xl border border-border bg-surface">
       <table class="w-full text-left text-sm" data-testid="bean-grid">
-        <thead class="border-b border-border text-xs whitespace-nowrap text-muted uppercase">
+        <thead class="border-b border-border text-xs whitespace-nowrap text-muted">
           <tr>
-            <th scope="col" class="min-w-44 px-4 py-3 font-medium">{m.bean_name()}</th>
-            <th scope="col" class="min-w-36 px-4 py-3 font-medium">{m.bean_roaster()}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{m.bean_roast_date()}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{m.bean_buy_date()}</th>
-            <th scope="col" class="px-4 py-3 font-medium">{m.bean_roast()}</th>
-            <th scope="col" class="px-4 py-3 text-right font-medium">{m.bean_weight()}</th>
-            <th scope="col" class="px-4 py-3 text-right font-medium">{m.bean_rating_short()}</th>
+            <th scope="col" aria-sort={ariaSort('name')} class="min-w-44 px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_name()}
+                direction={sortOf('name')}
+                onclick={() => (sort = nextSort(sort, 'name'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('roaster')} class="min-w-36 px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_roaster()}
+                direction={sortOf('roaster')}
+                onclick={() => (sort = nextSort(sort, 'roaster'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('roastingDate')} class="px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_roast_date()}
+                direction={sortOf('roastingDate')}
+                onclick={() => (sort = nextSort(sort, 'roastingDate'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('buyDate')} class="px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_buy_date()}
+                direction={sortOf('buyDate')}
+                onclick={() => (sort = nextSort(sort, 'buyDate'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('roast')} class="px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_roast()}
+                direction={sortOf('roast')}
+                onclick={() => (sort = nextSort(sort, 'roast'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('weight')} class="px-4 py-3 text-right font-medium">
+              <SortButton
+                label={m.bean_weight()}
+                direction={sortOf('weight')}
+                onclick={() => (sort = nextSort(sort, 'weight'))}
+                end
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('rating')} class="px-4 py-3 text-right font-medium">
+              <SortButton
+                label={m.bean_rating_short()}
+                direction={sortOf('rating')}
+                onclick={() => (sort = nextSort(sort, 'rating'))}
+                end
+              />
+            </th>
           </tr>
         </thead>
         <tbody>

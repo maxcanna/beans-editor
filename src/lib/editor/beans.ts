@@ -1,7 +1,9 @@
 import type { BackupRecord } from '../formats/backup/backup';
 import type { SharedBean } from '../beanlink/bean-link';
 import type { Blend, FreezingStorage, RoastingType, Roast } from '../formats/backup/enums';
+import { ROASTS } from '../formats/backup/enums';
 import { newConfig } from './records';
+import { sortRecords, type Sort } from './sort';
 
 /**
  * The bean fields the editor shows, under Beanconqueror's own names
@@ -245,6 +247,15 @@ export interface BeanFilter {
   /** Buy date range as local days, inclusive; beans without a buy date never match a limit. */
   from?: string;
   to?: string;
+  /** The same for the roast date. */
+  roastFrom?: string;
+  roastTo?: string;
+}
+
+/** Whether a local day (empty when unset) falls outside an inclusive range; a missing day is outside any limit. */
+function outsideRange(day: string, from?: string, to?: string): boolean {
+  if (!from && !to) return false;
+  return !day || (!!from && day < from) || (!!to && day > to);
 }
 
 /** Beans matching a search over name, roaster, origins and notes, newest first like the app. */
@@ -254,10 +265,8 @@ export function filterBeans(beans: readonly BackupRecord[], filter: BeanFilter):
     .filter((bean) => {
       const b = bean as Record<string, unknown>;
       if (!filter.showArchived && b['finished'] === true) return false;
-      if (filter.from || filter.to) {
-        const day = localDay(b['buyDate']);
-        if (!day || (filter.from && day < filter.from) || (filter.to && day > filter.to)) return false;
-      }
+      if (outsideRange(localDay(b['buyDate']), filter.from, filter.to)) return false;
+      if (outsideRange(localDay(b['roastingDate']), filter.roastFrom, filter.roastTo)) return false;
       if (words.length === 0) return true;
       const origins = Array.isArray(b['bean_information'])
         ? (b['bean_information'] as Record<string, unknown>[])
@@ -335,4 +344,35 @@ export function sharedFromBeanForm(form: BeanForm): SharedBean {
     note: str(form.note),
     bean_information: origins.length > 0 ? origins : undefined,
   };
+}
+
+export type BeanSortKey = 'name' | 'roaster' | 'roastingDate' | 'buyDate' | 'roast' | 'weight' | 'rating';
+
+const ROAST_ORDER = Object.keys(ROASTS);
+
+function beanSortValue(bean: BackupRecord, key: BeanSortKey): string | number | null {
+  const value = (bean as Record<string, unknown>)[key];
+  switch (key) {
+    case 'name':
+    case 'roaster':
+      return typeof value === 'string' && value.trim() ? value : null;
+    case 'roastingDate':
+    case 'buyDate': {
+      const time = typeof value === 'string' ? Date.parse(value) : NaN;
+      return Number.isNaN(time) ? null : time;
+    }
+    case 'roast': {
+      // By degree of roast, light to dark, not alphabetically.
+      const index = typeof value === 'string' ? ROAST_ORDER.indexOf(value) : -1;
+      return index > 0 ? index : null;
+    }
+    case 'weight':
+    case 'rating':
+      return typeof value === 'number' && value > 0 ? value : null;
+  }
+}
+
+/** Beans ordered by a table column; without a sort they stay as they are. */
+export function sortBeans(beans: readonly BackupRecord[], sort: Sort<BeanSortKey> | null): BackupRecord[] {
+  return sortRecords(beans, sort, beanSortValue);
 }
