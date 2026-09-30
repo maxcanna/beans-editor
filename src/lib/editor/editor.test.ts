@@ -283,7 +283,7 @@ describe('filterBeans', () => {
   ];
   const ids = (list: BackupRecord[]) => list.map((b) => b.config.uuid);
 
-  it('shows only beans in the freezer when asked', () => {
+  it('hides beans in the freezer unless asked', () => {
     const frozen = [
       bean('ice', { frozenDate: '2025-05-01T10:00:00.000Z', config: { uuid: 'ice', unix_timestamp: 3 } }),
       bean('thawed', {
@@ -293,8 +293,12 @@ describe('filterBeans', () => {
       }),
       bean('room', { config: { uuid: 'room', unix_timestamp: 1 } }),
     ];
-    expect(ids(filterBeans(frozen, { query: '', showArchived: false }))).toEqual(['ice', 'thawed', 'room']);
-    expect(ids(filterBeans(frozen, { query: '', showArchived: false, showFrozen: true }))).toEqual(['ice']);
+    expect(ids(filterBeans(frozen, { query: '', showArchived: false }))).toEqual(['thawed', 'room']);
+    expect(ids(filterBeans(frozen, { query: '', showArchived: false, showFrozen: true }))).toEqual([
+      'ice',
+      'thawed',
+      'room',
+    ]);
   });
 
   it('hides archived beans unless asked and sorts newest first', () => {

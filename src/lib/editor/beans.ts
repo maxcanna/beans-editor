@@ -244,7 +244,7 @@ export function validateBean(form: BeanForm, maxRating = 5): BeanErrors {
 export interface BeanFilter {
   query: string;
   showArchived: boolean;
-  /** Only beans that are in the freezer right now (frozen and not yet unfrozen). */
+  /** Include beans that are in the freezer right now (frozen and not yet unfrozen); they're hidden otherwise. */
   showFrozen?: boolean;
   /** Buy date range as local days, inclusive; beans without a buy date never match a limit. */
   from?: string;
@@ -273,7 +273,7 @@ export function filterBeans(beans: readonly BackupRecord[], filter: BeanFilter):
     .filter((bean) => {
       const b = bean as Record<string, unknown>;
       if (!filter.showArchived && b['finished'] === true) return false;
-      if (filter.showFrozen && !isFrozen(bean)) return false;
+      if (!filter.showFrozen && isFrozen(bean)) return false;
       if (outsideRange(localDay(b['buyDate']), filter.from, filter.to)) return false;
       if (outsideRange(localDay(b['roastingDate']), filter.roastFrom, filter.roastTo)) return false;
       if (words.length === 0) return true;

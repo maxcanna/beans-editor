@@ -284,7 +284,7 @@ test('shows the same fields in the same order when adding a bean by hand or from
   expect(fromUrl).toEqual(byHand);
 });
 
-test('filters beans in the freezer with a Show frozen switch and marks them', async ({ page }) => {
+test('includes frozen beans with a Show frozen switch and labels them', async ({ page }) => {
   const data = backupData();
   data.BEANS.push({
     ...data.BEANS[0],
@@ -294,19 +294,24 @@ test('filters beans in the freezer with a Show frozen switch and marks them', as
   });
   await openBackup(page, data);
   const icy = page.getByRole('button', { name: /Icy Lot/ });
-  const finca = page.getByRole('button', { name: /Finca Example/ });
-  await expect(icy).toBeVisible();
-  await expect(finca).toBeVisible();
-  await expect(page.getByText('Frozen', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
+  // Hidden until asked for, like archived beans.
+  await expect(icy).toBeHidden();
 
   const show = page.getByRole('switch', { name: 'Show frozen' });
   await expect(show).toHaveAttribute('aria-checked', 'false');
   await show.click();
   await expect(show).toHaveAttribute('aria-checked', 'true');
   await expect(icy).toBeVisible();
-  await expect(finca).toBeHidden();
+  await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
+
+  // The label is in the row, in both layouts.
+  for (const layout of ['Cards', 'Grid']) {
+    await page.getByRole('button', { name: layout }).click();
+    await expect(page.getByText('Frozen', { exact: true })).toBeVisible();
+  }
   await show.click();
-  await expect(finca).toBeVisible();
+  await expect(icy).toBeHidden();
 });
 
 test('shows the roast type, not the degree of roast, in the bean table', async ({ page }) => {
