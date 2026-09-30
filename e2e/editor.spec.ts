@@ -299,6 +299,12 @@ test('includes frozen beans with a Show frozen switch and labels them', async ({
   await expect(icy).toBeHidden();
 
   const show = page.getByRole('switch', { name: 'Show frozen' });
+  // On a phone the switch folds behind the Filters button.
+  const filters = page.locator('button[aria-controls="bean-filters"]');
+  if (await filters.isVisible()) {
+    await expect(show).toBeHidden();
+    await filters.click();
+  }
   await expect(show).toHaveAttribute('aria-checked', 'false');
   await show.click();
   await expect(show).toHaveAttribute('aria-checked', 'true');
@@ -355,8 +361,16 @@ test('blocks deleting a bean that brews use and offers to archive it', async ({ 
   await expect(dialog).toBeHidden();
 
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeHidden();
-  await page.getByRole('switch', { name: 'Show archived' }).click();
+  // On a phone the switches fold behind the Filters button with the date filters.
+  const showArchived = page.getByRole('switch', { name: 'Show archived' });
+  const toggle = page.locator('button[aria-controls="bean-filters"]');
+  if (await toggle.isVisible()) {
+    await expect(showArchived).toBeHidden();
+    await toggle.click();
+  }
+  await showArchived.click();
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
+  if (await toggle.isVisible()) await expect(toggle).toHaveText('Filters: 1');
 });
 
 test('deletes a bean no brew uses', async ({ page }) => {
