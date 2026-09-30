@@ -17,4 +17,12 @@
   // Required by `wrangler preview`, which Workers Builds runs for non-production branches.
   // Empty: there are no bindings or vars, so Previews need no settings of their own.
   "previews": {},
+  // Workers Logs: keep request (invocation) logs so traffic stats can be queried in the dashboard.
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true,
+    },
+  },
 }
