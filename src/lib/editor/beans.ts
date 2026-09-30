@@ -1,7 +1,7 @@
 import type { BackupRecord } from '../formats/backup/backup';
 import type { SharedBean } from '../beanlink/bean-link';
 import type { Blend, FreezingStorage, RoastingType, Roast } from '../formats/backup/enums';
-import { ROASTS } from '../formats/backup/enums';
+import { ROASTING_TYPES } from '../formats/backup/enums';
 import { newConfig } from './records';
 import { sortRecords, type Sort } from './sort';
 
@@ -244,6 +244,8 @@ export function validateBean(form: BeanForm, maxRating = 5): BeanErrors {
 export interface BeanFilter {
   query: string;
   showArchived: boolean;
+  /** Only beans that are in the freezer right now (frozen and not yet unfrozen). */
+  showFrozen?: boolean;
   /** Buy date range as local days, inclusive; beans without a buy date never match a limit. */
   from?: string;
   to?: string;
@@ -259,12 +261,19 @@ function outsideRange(day: string, from?: string, to?: string): boolean {
 }
 
 /** Beans matching a search over name, roaster, origins and notes, newest first like the app. */
+/** Whether a bean is in the freezer: it has a frozen date and no unfrozen date after it. */
+export function isFrozen(bean: BackupRecord): boolean {
+  const b = bean as Record<string, unknown>;
+  return localDay(b['frozenDate']) !== '' && localDay(b['unfrozenDate']) === '';
+}
+
 export function filterBeans(beans: readonly BackupRecord[], filter: BeanFilter): BackupRecord[] {
   const words = filter.query.toLowerCase().split(/\s+/).filter(Boolean);
   return beans
     .filter((bean) => {
       const b = bean as Record<string, unknown>;
       if (!filter.showArchived && b['finished'] === true) return false;
+      if (filter.showFrozen && !isFrozen(bean)) return false;
       if (outsideRange(localDay(b['buyDate']), filter.from, filter.to)) return false;
       if (outsideRange(localDay(b['roastingDate']), filter.roastFrom, filter.roastTo)) return false;
       if (words.length === 0) return true;
@@ -346,9 +355,10 @@ export function sharedFromBeanForm(form: BeanForm): SharedBean {
   };
 }
 
-export type BeanSortKey = 'name' | 'roaster' | 'roastingDate' | 'buyDate' | 'roast' | 'weight' | 'rating';
+export type BeanSortKey =
+  'name' | 'roaster' | 'roastingDate' | 'buyDate' | 'bean_roasting_type' | 'weight' | 'rating';
 
-const ROAST_ORDER = Object.keys(ROASTS);
+const ROASTING_TYPE_ORDER = Object.keys(ROASTING_TYPES);
 
 function beanSortValue(bean: BackupRecord, key: BeanSortKey): string | number | null {
   const value = (bean as Record<string, unknown>)[key];
@@ -361,10 +371,10 @@ function beanSortValue(bean: BackupRecord, key: BeanSortKey): string | number | 
       const time = typeof value === 'string' ? Date.parse(value) : NaN;
       return Number.isNaN(time) ? null : time;
     }
-    case 'roast': {
-      // By degree of roast, light to dark, not alphabetically.
-      const index = typeof value === 'string' ? ROAST_ORDER.indexOf(value) : -1;
-      return index > 0 ? index : null;
+    case 'bean_roasting_type': {
+      // In the order the app lists them (filter, espresso, omni), not alphabetically; unknown sorts last.
+      const index = typeof value === 'string' ? ROASTING_TYPE_ORDER.indexOf(value) : -1;
+      return index >= 0 && value !== 'UNKNOWN' ? index : null;
     }
     case 'weight':
     case 'rating':

@@ -1,20 +1,19 @@
 <script lang="ts">
-  import { Archive, Plus, Search } from '@lucide/svelte';
+  import { Archive, Search } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterGear, gearForm, type GearKey } from '../../editor/gear';
-  import { primaryButtonClass, searchClass } from './styles';
+  import { searchClass } from './styles';
+  import Toggle from './Toggle.svelte';
 
   interface Props {
     kind: GearKey;
     items: readonly BackupRecord[];
     brewCount: (uuid: string) => number;
     onopen: (uuid: string) => void;
-    /** Only grinders can be created here. */
-    onadd?: () => void;
   }
 
-  let { kind, items, brewCount, onopen, onadd }: Props = $props();
+  let { kind, items, brewCount, onopen }: Props = $props();
   let query = $state('');
   let showArchived = $state(false);
   const shown = $derived(filterGear(items, query, showArchived));
@@ -36,16 +35,7 @@
       />
       <input type="search" placeholder={text.search} class={searchClass} bind:value={query} />
     </label>
-    <label class="flex items-center gap-2 text-sm">
-      <input type="checkbox" class="size-4 accent-accent" bind:checked={showArchived} />
-      {m.beans_show_archived()}
-    </label>
-    {#if onadd}
-      <button type="button" class={primaryButtonClass} onclick={onadd}>
-        <Plus class="size-4" aria-hidden="true" />
-        {m.grinders_add()}
-      </button>
-    {/if}
+    <Toggle bind:checked={showArchived} label={m.beans_show_archived()} />
   </div>
 
   {#if shown.length === 0}

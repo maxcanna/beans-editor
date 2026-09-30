@@ -1,7 +1,7 @@
 <script lang="ts">
   import { LayoutGrid, Table } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
-  import type { View } from './view';
+  import type { View } from './view.svelte';
 
   interface Props {
     view: View;
