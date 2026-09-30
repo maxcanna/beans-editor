@@ -1,15 +1,16 @@
 <script lang="ts">
-  import { Archive, Link, Plus, Search, SlidersHorizontal } from '@lucide/svelte';
+  import { Archive, Link, Plus, Search, Snowflake, SlidersHorizontal } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
-  import { filterBeans, localDay, sortBeans, type BeanSortKey } from '../../editor/beans';
-  import { label, ROAST_LABELS } from '../../editor/labels';
+  import { filterBeans, isFrozen, localDay, sortBeans, type BeanSortKey } from '../../editor/beans';
+  import { label, ROAST_LABELS, ROASTING_TYPE_LABELS } from '../../editor/labels';
   import { nextSort, type Sort } from '../../editor/sort';
   import { inputClass, labelClass } from './styles';
   import MetaList from './MetaList.svelte';
   import SortButton from './SortButton.svelte';
   import ViewToggle from './ViewToggle.svelte';
-  import { loadView, saveView, type View } from './view';
+  import Toggle from './Toggle.svelte';
+  import { layout } from './view.svelte';
 
   interface Props {
     beans: readonly BackupRecord[];
@@ -22,13 +23,9 @@
 
   let { beans, brewCount, onopen, onadd, onaddlink }: Props = $props();
 
-  const VIEW_KEY = 'beans-editor:beans-view';
-
-  let view = $state<View>(
-    loadView(VIEW_KEY, () => (matchMedia('(min-width: 48rem)').matches ? 'grid' : 'cards')),
-  );
   let query = $state('');
   let showArchived = $state(false);
+  let showFrozen = $state(false);
   /** Buy date and roast date ranges, local days. */
   let from = $state('');
   let to = $state('');
@@ -36,16 +33,11 @@
   let roastTo = $state('');
   let sort = $state<Sort<BeanSortKey> | null>(null);
   const shown = $derived(
-    sortBeans(filterBeans(beans, { query, showArchived, from, to, roastFrom, roastTo }), sort),
+    sortBeans(filterBeans(beans, { query, showArchived, showFrozen, from, to, roastFrom, roastTo }), sort),
   );
   // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
   let filtersOpen = $state(false);
   const activeFilters = $derived([from, to, roastFrom, roastTo].filter(Boolean).length);
-
-  function setView(next: View) {
-    view = next;
-    saveView(VIEW_KEY, next);
-  }
 
   const sortOf = (key: BeanSortKey) => (sort?.key === key ? sort.direction : null);
   const ariaSort = (key: BeanSortKey) =>
@@ -114,11 +106,9 @@
       <SlidersHorizontal class="size-4" aria-hidden="true" />
       {activeFilters ? m.beans_filters_count({ count: activeFilters }) : m.beans_filters()}
     </button>
-    <label class="flex items-center gap-2 text-sm">
-      <input type="checkbox" class="size-4 accent-accent" bind:checked={showArchived} />
-      {m.beans_show_archived()}
-    </label>
-    <ViewToggle {view} onchange={setView} />
+    <Toggle bind:checked={showArchived} label={m.beans_show_archived()} />
+    <Toggle bind:checked={showFrozen} label={m.beans_show_frozen()} />
+    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
   </div>
 
   <div
@@ -156,7 +146,7 @@
     <p class="rounded-2xl border border-dashed border-border p-8 text-center text-muted">
       {beans.length === 0 ? m.beans_empty() : m.beans_no_match()}
     </p>
-  {:else if view === 'cards'}
+  {:else if layout.view === 'cards'}
     <ul class="grid gap-3 sm:grid-cols-2" data-testid="bean-cards">
       {#each shown as bean (bean.config.uuid)}
         <li>
@@ -173,6 +163,14 @@
                 >
                   <Archive class="size-3" aria-hidden="true" />
                   {m.beans_archived()}
+                </span>
+              {/if}
+              {#if isFrozen(bean)}
+                <span
+                  class="inline-flex shrink-0 items-center gap-1 rounded-full bg-border/50 px-2 py-0.5 text-xs whitespace-nowrap text-muted"
+                >
+                  <Snowflake class="size-3" aria-hidden="true" />
+                  {m.beans_frozen()}
                 </span>
               {/if}
             </span>
@@ -223,11 +221,11 @@
                 onclick={() => (sort = nextSort(sort, 'buyDate'))}
               />
             </th>
-            <th scope="col" aria-sort={ariaSort('roast')} class="px-4 py-3 font-medium">
+            <th scope="col" aria-sort={ariaSort('bean_roasting_type')} class="px-4 py-3 font-medium">
               <SortButton
-                label={m.bean_roast()}
-                direction={sortOf('roast')}
-                onclick={() => (sort = nextSort(sort, 'roast'))}
+                label={m.bean_roasting_type()}
+                direction={sortOf('bean_roasting_type')}
+                onclick={() => (sort = nextSort(sort, 'bean_roasting_type'))}
               />
             </th>
             <th scope="col" aria-sort={ariaSort('weight')} class="px-4 py-3 text-right font-medium">
@@ -266,12 +264,19 @@
                     {m.beans_archived()}
                   </span>
                 {/if}
+                {#if isFrozen(bean)}
+                  <span
+                    class="ml-2 rounded-full bg-border/50 px-2 py-0.5 text-xs font-normal whitespace-nowrap text-muted"
+                  >
+                    {m.beans_frozen()}
+                  </span>
+                {/if}
               </th>
               <td class="px-4 py-2">{text(bean, 'roaster')}</td>
               <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'roastingDate')}</td>
               <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'buyDate')}</td>
               <td class="px-4 py-2 whitespace-nowrap"
-                >{label(ROAST_LABELS, (bean as Record<string, unknown>)['roast'])}</td
+                >{label(ROASTING_TYPE_LABELS, (bean as Record<string, unknown>)['bean_roasting_type'])}</td
               >
               <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'weight') ?? ''}</td>
               <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'rating') ?? ''}</td>

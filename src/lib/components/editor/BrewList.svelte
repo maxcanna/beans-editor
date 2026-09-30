@@ -9,7 +9,7 @@
   import ViewToggle from './ViewToggle.svelte';
   import VirtualList from './VirtualList.svelte';
   import VirtualTable from './VirtualTable.svelte';
-  import { loadView, saveView, type View } from './view';
+  import { layout } from './view.svelte';
 
   interface Option {
     uuid: string;
@@ -29,14 +29,6 @@
   let filter = $state(emptyBrewFilter());
   let sort = $state<Sort<BrewSortKey> | null>(null);
   const shown = $derived(sortBrews(filterBrews(brews, names, filter), names, sort));
-
-  // Brews keep the list they always had as cards, on every screen size.
-  const VIEW_KEY = 'beans-editor:brews-view';
-  let view = $state<View>(loadView(VIEW_KEY, () => 'cards'));
-  function setView(next: View) {
-    view = next;
-    saveView(VIEW_KEY, next);
-  }
 
   // Two cards side by side once there's room, like the bean cards.
   const wide = matchMedia('(min-width: 40rem)');
@@ -98,7 +90,7 @@
       />
       <input type="search" placeholder={m.brews_search()} class={searchClass} bind:value={filter.query} />
     </label>
-    <ViewToggle {view} onchange={setView} />
+    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
     <button
       type="button"
       class="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent sm:hidden"
@@ -151,7 +143,7 @@
     <p class="rounded-2xl border border-dashed border-border p-8 text-center text-muted">
       {brews.length === 0 ? m.brews_empty() : m.brews_no_match()}
     </p>
-  {:else if view === 'cards'}
+  {:else if layout.view === 'cards'}
     <div data-testid="brew-cards">
       <VirtualList
         items={shown}

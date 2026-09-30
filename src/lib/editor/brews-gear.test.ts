@@ -10,7 +10,7 @@ import {
   unixFromLocalDateTime,
   validateBrew,
 } from './brews';
-import { applyGearForm, filterGear, gearForm, newMill } from './gear';
+import { applyGearForm, filterGear, gearForm } from './gear';
 
 const config = (uuid: string, unix_timestamp = 1_700_000_000) => ({ uuid, unix_timestamp });
 
@@ -93,9 +93,7 @@ describe('gear', () => {
     });
   });
 
-  it('creates grinders like the app and sorts by name', () => {
-    const mill = newMill(1_700_000_000_000);
-    expect(mill).toMatchObject({ finished: false, has_adjustable_speed: true, has_timer: true });
+  it('sorts by name and hides archived unless asked', () => {
     const list = [
       { name: 'b', config: config('1') },
       { name: 'A', config: config('2') },

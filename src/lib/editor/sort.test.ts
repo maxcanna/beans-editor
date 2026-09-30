@@ -55,12 +55,19 @@ describe('sortRecords', () => {
 
 describe('sortBeans', () => {
   const beans: BackupRecord[] = [
-    { name: 'Zed', roaster: 'North', weight: 250, roast: 'FRENCH_ROAST', rating: 0, config: config('z') },
+    {
+      name: 'Zed',
+      roaster: 'North',
+      weight: 250,
+      bean_roasting_type: 'ESPRESSO',
+      rating: 0,
+      config: config('z'),
+    },
     {
       name: 'alpha',
       roaster: '',
       weight: 0,
-      roast: 'CINNAMON_ROAST',
+      bean_roasting_type: 'FILTER',
       rating: 4,
       roastingDate: '2025-05-01T10:00:00.000Z',
       config: config('a'),
@@ -69,7 +76,7 @@ describe('sortBeans', () => {
       name: 'Mid',
       roaster: 'South',
       weight: 1000,
-      roast: 'UNKNOWN',
+      bean_roasting_type: 'UNKNOWN',
       rating: 5,
       roastingDate: '2025-04-01T10:00:00.000Z',
       buyDate: '2025-03-01T10:00:00.000Z',
@@ -86,8 +93,8 @@ describe('sortBeans', () => {
     expect(ids(sortBeans(beans, { key: 'rating', direction: 'desc' }))).toEqual(['m', 'a', 'z']);
   });
 
-  it('sorts roasts by degree, light to dark, not by name', () => {
-    expect(ids(sortBeans(beans, { key: 'roast', direction: 'asc' }))).toEqual(['a', 'z', 'm']);
+  it('sorts roast types in the app order, not by name, with unknown last', () => {
+    expect(ids(sortBeans(beans, { key: 'bean_roasting_type', direction: 'asc' }))).toEqual(['a', 'z', 'm']);
   });
 });
 
