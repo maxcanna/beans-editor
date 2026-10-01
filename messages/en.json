@@ -154,7 +154,7 @@
   "brews_filter_clear": "Clear filters",
   "brews_filters": "Filters",
   "brews_filters_count": "Filters: {count}",
-  "brews_col_when": "Date",
+  "brews_col_when": "Brew date",
   "brews_col_water": "Water",
   "brews_shown": "Showing {shown} of {total}",
   "brews_empty": "No brews in this backup.",
