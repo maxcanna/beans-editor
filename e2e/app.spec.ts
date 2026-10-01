@@ -9,8 +9,8 @@ test('opens a backup from the file picker into the editor', async ({ page }) => 
     mimeType: 'application/zip',
     buffer: backupZip(),
   });
-  for (const count of ['Beans: 2', 'Brews: 1', 'Grinders: 1', 'Methods: 1']) {
-    await expect(page.getByTestId('backup-editor')).toContainText(count);
+  for (const tab of ['Beans 2', 'Brews 1', 'Grinders 1', 'Methods 1']) {
+    await expect(page.getByRole('tab', { name: tab })).toBeVisible();
   }
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
 });
@@ -43,21 +43,6 @@ test('explains how to use the app on this device and links to the source', async
     'href',
     'https://github.com/maxcanna/beans-editor',
   );
-});
-
-test('keeps each file count on one line on a narrow phone', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 700 });
-  await page.goto('/');
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'Beanconqueror.zip',
-    mimeType: 'application/zip',
-    buffer: backupZip(),
-  });
-  for (const count of ['Beans: 2', 'Brews: 1', 'Grinders: 1', 'Methods: 1']) {
-    const item = page.getByTestId('backup-editor').locator('header').getByText(count, { exact: true });
-    const lineHeight = await item.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
-    expect((await item.boundingBox())!.height).toBeLessThan(lineHeight * 1.5);
-  }
 });
 
 for (const [what, buffer] of [

@@ -24,6 +24,10 @@ Use Yarn 4 (via Corepack) only, never npm; `yarn.lock` is the lockfile and `.yar
 
 If Chromium is preinstalled somewhere instead of via `yarn playwright install`, set `PW_CHROMIUM_PATH` to its executable.
 
+## shadcn-svelte skill
+
+Always install the shadcn-svelte skill before touching the UI: `npx skills add huntabyte/shadcn-svelte`. Build UI from its components (Toggle Group, Badge, and so on), copied into `src/lib/components/ui` on the project's own tokens.
+
 ## Definition of done
 
 Every change must pass `yarn validate` and `yarn test:e2e` before it is pushed. Add or update tests with the change: unit tests for parsing, writing and state; e2e tests for user flows. Never skip, disable or loosen a test to get green.
