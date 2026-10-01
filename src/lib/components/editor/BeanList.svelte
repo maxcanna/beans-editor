@@ -202,20 +202,6 @@
       <table class="w-full text-left text-sm" data-testid="bean-grid">
         <thead class="border-b border-border text-xs whitespace-nowrap text-muted">
           <tr>
-            <th scope="col" aria-sort={ariaSort('name')} class="min-w-44 px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_name()}
-                direction={sortOf('name')}
-                onclick={() => (sort = nextSort(sort, 'name'))}
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('roaster')} class="min-w-36 px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_roaster()}
-                direction={sortOf('roaster')}
-                onclick={() => (sort = nextSort(sort, 'roaster'))}
-              />
-            </th>
             <th scope="col" aria-sort={ariaSort('roastingDate')} class="px-4 py-3 font-medium">
               <SortButton
                 label={m.bean_roast_date()}
@@ -228,6 +214,20 @@
                 label={m.bean_buy_date()}
                 direction={sortOf('buyDate')}
                 onclick={() => (sort = nextSort(sort, 'buyDate'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('name')} class="min-w-44 px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_name()}
+                direction={sortOf('name')}
+                onclick={() => (sort = nextSort(sort, 'name'))}
+              />
+            </th>
+            <th scope="col" aria-sort={ariaSort('roaster')} class="min-w-36 px-4 py-3 font-medium">
+              <SortButton
+                label={m.bean_roaster()}
+                direction={sortOf('roaster')}
+                onclick={() => (sort = nextSort(sort, 'roaster'))}
               />
             </th>
             <th scope="col" aria-sort={ariaSort('bean_roasting_type')} class="px-4 py-3 font-medium">
@@ -258,6 +258,8 @@
         <tbody>
           {#each shown as bean (bean.config.uuid)}
             <tr class="border-b border-border last:border-0 hover:bg-border/20">
+              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'roastingDate')}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'buyDate')}</td>
               <th scope="row" class="px-4 py-2 font-medium">
                 <button
                   type="button"
@@ -282,8 +284,6 @@
                 {/if}
               </th>
               <td class="px-4 py-2">{text(bean, 'roaster')}</td>
-              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'roastingDate')}</td>
-              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'buyDate')}</td>
               <td class="px-4 py-2 whitespace-nowrap"
                 >{label(ROASTING_TYPE_LABELS, (bean as Record<string, unknown>)['bean_roasting_type'])}</td
               >
