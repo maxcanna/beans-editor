@@ -35,9 +35,16 @@
   const shown = $derived(
     sortBeans(filterBeans(beans, { query, showArchived, showFrozen, from, to, roastFrom, roastTo }), sort),
   );
-  // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
+  // On phones the filters and the archived/frozen switches would fill the screen, so they fold behind a button;
+  // wider screens always show them.
   let filtersOpen = $state(false);
-  const activeFilters = $derived([from, to, roastFrom, roastTo].filter(Boolean).length);
+  const activeFilters = $derived(
+    [from, to, roastFrom, roastTo, showArchived, showFrozen].filter(Boolean).length,
+  );
+  const clearFilters = () => {
+    from = to = roastFrom = roastTo = '';
+    showArchived = showFrozen = false;
+  };
 
   const sortOf = (key: BeanSortKey) => (sort?.key === key ? sort.direction : null);
   const ariaSort = (key: BeanSortKey) =>
@@ -106,8 +113,6 @@
       <SlidersHorizontal class="size-4" aria-hidden="true" />
       {activeFilters ? m.beans_filters_count({ count: activeFilters }) : m.beans_filters()}
     </button>
-    <Toggle bind:checked={showArchived} label={m.beans_show_archived()} />
-    <Toggle bind:checked={showFrozen} label={m.beans_show_frozen()} />
     <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
   </div>
 
@@ -115,6 +120,11 @@
     id="bean-filters"
     class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap"
   >
+    <!-- As tall as the date inputs, so the switches line up with them on wide screens. -->
+    <div class="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-3 sm:h-[38px]">
+      <Toggle bind:checked={showArchived} label={m.beans_show_archived()} />
+      <Toggle bind:checked={showFrozen} label={m.beans_show_frozen()} />
+    </div>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_roast_from()}
       <input class={inputClass} type="date" bind:value={roastFrom} />
@@ -135,7 +145,7 @@
       <button
         type="button"
         class="col-span-2 rounded-full px-3 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
-        onclick={() => ((from = ''), (to = ''), (roastFrom = ''), (roastTo = ''))}
+        onclick={clearFilters}
       >
         {m.beans_filter_clear()}
       </button>
