@@ -102,9 +102,17 @@
       {activeFilters ? m.brews_filters_count({ count: activeFilters }) : m.brews_filters()}
     </button>
   </div>
-  <div id="brew-filters" class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-3 sm:grid lg:grid-cols-6">
+  <div id="brew-filters" class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+    <label class="{labelClass} sm:w-44">
+      {m.brews_filter_from()}
+      <input class={inputClass} type="date" bind:value={filter.from} />
+    </label>
+    <label class="{labelClass} sm:w-44">
+      {m.brews_filter_to()}
+      <input class={inputClass} type="date" bind:value={filter.to} />
+    </label>
     {#each FILTERS as f (f.key)}
-      <label class="{labelClass} col-span-2 sm:col-span-1 lg:col-span-2">
+      <label class="{labelClass} col-span-2 sm:w-44">
         {f.label()}
         <select class={inputClass} bind:value={filter[f.key]}>
           <option value="">{m.brews_filter_any()}</option>
@@ -114,14 +122,6 @@
         </select>
       </label>
     {/each}
-    <label class="{labelClass} lg:col-span-2">
-      {m.brews_filter_from()}
-      <input class={inputClass} type="date" bind:value={filter.from} />
-    </label>
-    <label class="{labelClass} lg:col-span-2">
-      {m.brews_filter_to()}
-      <input class={inputClass} type="date" bind:value={filter.to} />
-    </label>
   </div>
 
   <div class="flex items-center gap-3 text-sm text-muted">
