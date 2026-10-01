@@ -320,6 +320,20 @@ test('includes frozen beans with a Show frozen toggle and labels them', async ({
   await expect(icy).toBeHidden();
 });
 
+test('leads the bean table with roast date and buy date, and the brew table with brew date', async ({
+  page,
+}) => {
+  await openBackup(page);
+  await page.getByRole('button', { name: 'Grid' }).click();
+  const beanHeaders = page.getByTestId('bean-grid').getByRole('columnheader');
+  await expect(beanHeaders.nth(0)).toHaveText('Roast date');
+  await expect(beanHeaders.nth(1)).toHaveText('Buy date');
+  await expect(beanHeaders.nth(2)).toHaveText('Name');
+
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  await expect(page.getByTestId('brew-table').getByRole('columnheader').first()).toHaveText('Brew date');
+});
+
 test('shows the roast type, not the degree of roast, in the bean table', async ({ page }) => {
   const data = backupData();
   data.BEANS[0] = { ...data.BEANS[0], bean_roasting_type: 'ESPRESSO' };
