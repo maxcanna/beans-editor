@@ -495,6 +495,29 @@ test('edits a brew and deletes another', async ({ page }) => {
   expect(brews).toEqual([{ ...data.BREWS[0], grind_size: '18', grind_weight: 15.5 }]);
 });
 
+test('lines the brew filters up on one row on wide screens, dates first', async ({ page }) => {
+  await openBackup(page);
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  const toggle = page.locator('button[aria-controls="brew-filters"]');
+  if (await toggle.isVisible()) await toggle.click();
+
+  const labels = ['Brew date from', 'Brew date to', 'Bean', 'Method', 'Grinder'];
+  const boxes = await Promise.all(
+    labels.map((name) =>
+      page.locator('#brew-filters > label').filter({ hasText: name }).first().boundingBox(),
+    ),
+  );
+  const xs = boxes.map((box) => box!.x);
+  const ys = boxes.map((box) => box!.y);
+  if (await toggle.isVisible()) {
+    // Phones stack them, still in this order.
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+  } else {
+    expect(new Set(ys).size).toBe(1);
+    expect(xs).toEqual([...xs].sort((a, b) => a - b));
+  }
+});
+
 test('keeps long brew lists fast by rendering only the rows in view', async ({ page }) => {
   const data = backupData();
   data.BREWS = Array.from({ length: 3000 }, (_, i) => ({
