@@ -46,7 +46,7 @@ test('edits a bean and downloads a backup that keeps everything else', async ({ 
   await expect(page.getByTestId('save-state')).toHaveText('Unsaved changes');
 
   const json = await downloadBackup(page);
-  await expect(page.getByTestId('save-state')).toHaveText('All changes downloaded');
+  await expect(page.getByTestId('save-state')).toBeHidden();
   const expected = backupData();
   expect(json).toEqual({
     ...expected,
@@ -89,7 +89,7 @@ test('adds a bean with the fields the app expects', async ({ page }) => {
   await dialog.getByLabel('Roast date').fill('2025-04-30');
   await dialog.getByLabel('Weight (g)').fill('1000');
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByTestId('backup-editor')).toContainText('Beans: 3');
+  await expect(page.getByRole('tab', { name: 'Beans 3' })).toBeVisible();
 
   const beans = (await downloadBackup(page))['BEANS'] as Record<string, unknown>[];
   const added = beans.at(-1)!;
@@ -204,7 +204,7 @@ test('shows brews as cards or as a table that sorts by column', async ({ page })
     config: { uuid: 'brew-2', unix_timestamp: 1_700_100_000 },
   });
   await openBackup(page, data);
-  await page.getByRole('tab', { name: 'Brews (2)' }).click();
+  await page.getByRole('tab', { name: 'Brews 2' }).click();
   await page.getByRole('button', { name: 'Cards' }).click();
   await expect(page.getByTestId('brew-cards')).toBeVisible();
 
@@ -226,7 +226,7 @@ test('shows brews as cards or as a table that sorts by column', async ({ page })
 
   // The layout is remembered, and a row opens the brew.
   await page.reload();
-  await page.getByRole('tab', { name: 'Brews (2)' }).click();
+  await page.getByRole('tab', { name: 'Brews 2' }).click();
   await expect(page.getByTestId('brew-table')).toBeVisible();
   await page
     .getByTestId('brew-table')
@@ -245,7 +245,7 @@ test('keeps long brew tables fast too', async ({ page }) => {
     config: { uuid: `brew-${i}`, unix_timestamp: 1_700_000_000 + i * 60 },
   }));
   await openBackup(page, data);
-  await page.getByRole('tab', { name: 'Brews (3000)' }).click();
+  await page.getByRole('tab', { name: 'Brews 3000' }).click();
   await page.getByRole('button', { name: 'Grid' }).click();
   const rows = page.getByTestId('brew-table').locator('tbody tr:not([aria-hidden])');
   await expect(rows.first()).toBeVisible();
@@ -284,7 +284,7 @@ test('shows the same fields in the same order when adding a bean by hand or from
   expect(fromUrl).toEqual(byHand);
 });
 
-test('includes frozen beans with a Show frozen switch and labels them', async ({ page }) => {
+test('includes frozen beans with a Show frozen toggle and labels them', async ({ page }) => {
   const data = backupData();
   data.BEANS.push({
     ...data.BEANS[0],
@@ -298,16 +298,16 @@ test('includes frozen beans with a Show frozen switch and labels them', async ({
   // Hidden until asked for, like archived beans.
   await expect(icy).toBeHidden();
 
-  const show = page.getByRole('switch', { name: 'Show frozen' });
+  const show = page.getByRole('button', { name: 'Show frozen' });
   // On a phone the switch folds behind the Filters button.
   const filters = page.locator('button[aria-controls="bean-filters"]');
   if (await filters.isVisible()) {
     await expect(show).toBeHidden();
     await filters.click();
   }
-  await expect(show).toHaveAttribute('aria-checked', 'false');
+  await expect(show).toHaveAttribute('aria-pressed', 'false');
   await show.click();
-  await expect(show).toHaveAttribute('aria-checked', 'true');
+  await expect(show).toHaveAttribute('aria-pressed', 'true');
   await expect(icy).toBeVisible();
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeVisible();
 
@@ -337,7 +337,7 @@ test('shows the roast type, not the degree of roast, in the bean table', async (
 test('keeps the cards or table choice when switching between Beans and Brews', async ({ page }) => {
   await openBackup(page);
   await page.getByRole('button', { name: 'Cards' }).click();
-  await page.getByRole('tab', { name: 'Brews (1)' }).click();
+  await page.getByRole('tab', { name: 'Brews 1' }).click();
   await expect(page.getByTestId('brew-cards')).toBeVisible();
 
   await page.getByRole('button', { name: 'Grid' }).click();
@@ -346,7 +346,7 @@ test('keeps the cards or table choice when switching between Beans and Brews', a
   await expect(page.getByTestId('bean-grid')).toBeVisible();
 
   await page.reload();
-  await page.getByRole('tab', { name: 'Brews (1)' }).click();
+  await page.getByRole('tab', { name: 'Brews 1' }).click();
   await expect(page.getByTestId('brew-table')).toBeVisible();
 });
 
@@ -362,7 +362,7 @@ test('blocks deleting a bean that brews use and offers to archive it', async ({ 
 
   await expect(page.getByRole('button', { name: /Finca Example/ })).toBeHidden();
   // On a phone the switches fold behind the Filters button with the date filters.
-  const showArchived = page.getByRole('switch', { name: 'Show archived' });
+  const showArchived = page.getByRole('button', { name: 'Show archived' });
   const toggle = page.locator('button[aria-controls="bean-filters"]');
   if (await toggle.isVisible()) {
     await expect(showArchived).toBeHidden();
@@ -382,7 +382,7 @@ test('deletes a bean no brew uses', async ({ page }) => {
   await expect(page.getByRole('alertdialog')).toContainText('Delete this bean?');
   await confirm.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByRole('button', { name: /Unused Lot/ })).toBeHidden();
-  await expect(page.getByTestId('backup-editor')).toContainText('Beans: 1');
+  await expect(page.getByRole('tab', { name: 'Beans 1' })).toBeVisible();
 });
 
 test('searches and switches between cards and grid', async ({ page }) => {
@@ -424,7 +424,7 @@ test('asks before a shared backup replaces unsaved changes', async ({ page }) =>
   await sharePost(page, shared);
   await page.getByRole('alertdialog').getByRole('button', { name: 'Replace' }).click();
   await expect(page.getByRole('button', { name: /Unused Lot/ })).toBeVisible();
-  await expect(page.getByTestId('save-state')).toHaveText('All changes downloaded');
+  await expect(page.getByTestId('save-state')).toBeHidden();
 });
 
 test('offers to download stored work that no longer passes the check', async ({ page }) => {
@@ -465,7 +465,7 @@ test('edits a brew and deletes another', async ({ page }) => {
     config: { uuid: 'brew-2', unix_timestamp: 1_700_100_000 },
   });
   await openBackup(page, data);
-  await page.getByRole('tab', { name: 'Brews (2)' }).click();
+  await page.getByRole('tab', { name: 'Brews 2' }).click();
   await page.getByRole('button', { name: 'Cards' }).click();
   await expect(page.getByTestId('brews-count')).toHaveText('Showing 2 of 2');
 
@@ -489,7 +489,7 @@ test('edits a brew and deletes another', async ({ page }) => {
   const confirm = page.getByTestId('confirm-delete');
   await expect(confirm).toContainText('Delete this');
   await confirm.getByRole('button', { name: 'Delete' }).click();
-  await expect(page.getByRole('tab', { name: 'Brews (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Brews 1' })).toBeVisible();
 
   const brews = (await downloadBackup(page))['BREWS'];
   expect(brews).toEqual([{ ...data.BREWS[0], grind_size: '18', grind_weight: 15.5 }]);
@@ -505,7 +505,7 @@ test('keeps long brew lists fast by rendering only the rows in view', async ({ p
     config: { uuid: `brew-${i}`, unix_timestamp: 1_700_000_000 + i * 60 },
   }));
   await openBackup(page, data);
-  await page.getByRole('tab', { name: 'Brews (3000)' }).click();
+  await page.getByRole('tab', { name: 'Brews 3000' }).click();
   await page.getByRole('button', { name: 'Cards' }).click();
   const list = page.getByRole('list', { name: 'Brews' });
   await expect(list.getByRole('listitem').first()).toBeVisible();
@@ -517,7 +517,7 @@ test('keeps long brew lists fast by rendering only the rows in view', async ({ p
 
 test('guards grinders and methods that brews use, and offers no way to add a grinder', async ({ page }) => {
   await openBackup(page);
-  await page.getByRole('tab', { name: 'Grinders (1)' }).click();
+  await page.getByRole('tab', { name: 'Grinders 1' }).click();
   await expect(page.getByRole('button', { name: /^Add grinder/ })).toBeHidden();
   const dialog = page.getByTestId('gear-dialog');
 
@@ -529,7 +529,7 @@ test('guards grinders and methods that brews use, and offers no way to add a gri
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancel' }).last().click();
 
-  await page.getByRole('tab', { name: 'Methods (1)' }).click();
+  await page.getByRole('tab', { name: 'Methods 1' }).click();
   await page.getByRole('button', { name: /V60/ }).click();
   await dialog.getByLabel('Name').fill('V60 02');
   await dialog.getByRole('button', { name: 'Save' }).click();
