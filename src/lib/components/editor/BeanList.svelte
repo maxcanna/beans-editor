@@ -9,7 +9,7 @@
   import MetaList from './MetaList.svelte';
   import SortButton from './SortButton.svelte';
   import ViewToggle from './ViewToggle.svelte';
-  import Toggle from './Toggle.svelte';
+  import ShowToggles from './ShowToggles.svelte';
   import { layout } from './view.svelte';
 
   interface Props {
@@ -120,10 +120,9 @@
     id="bean-filters"
     class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap"
   >
-    <!-- As tall as the date inputs, so the switches line up with them on wide screens. -->
+    <!-- As tall as the date inputs, so the toggles line up with them on wide screens. -->
     <div class="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-3 sm:h-[38px]">
-      <Toggle bind:checked={showArchived} label={m.beans_show_archived()} />
-      <Toggle bind:checked={showFrozen} label={m.beans_show_frozen()} />
+      <ShowToggles bind:showArchived bind:showFrozen />
     </div>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_roast_from()}

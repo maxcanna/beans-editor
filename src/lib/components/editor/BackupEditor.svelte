@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleCheck, Download, FileArchive, X } from '@lucide/svelte';
+  import { Download, FileArchive, X } from '@lucide/svelte';
   import { Tabs } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { writeBackup, type BackupRecord } from '../../formats/backup/backup';
@@ -21,6 +21,7 @@
   import BrewList from './BrewList.svelte';
   import GearDialog from './GearDialog.svelte';
   import GearList from './GearList.svelte';
+  import { Badge } from '../ui/badge';
   import MetaList from './MetaList.svelte';
 
   interface Props {
@@ -86,10 +87,10 @@
   }
 
   const TABS = [
-    { key: 'BEANS', label: (count: number) => m.tab_beans({ count }) },
-    { key: 'BREWS', label: (count: number) => m.tab_brews({ count }) },
-    { key: 'MILL', label: (count: number) => m.tab_grinders({ count }) },
-    { key: 'PREPARATION', label: (count: number) => m.tab_methods({ count }) },
+    { key: 'BEANS', label: () => m.tab_beans() },
+    { key: 'BREWS', label: () => m.tab_brews() },
+    { key: 'MILL', label: () => m.tab_grinders() },
+    { key: 'PREPARATION', label: () => m.tab_methods() },
   ] as const;
 
   const bytes = () => writeBackup(data);
@@ -117,18 +118,15 @@
           m.editor_count_methods({ count: count('PREPARATION') }),
         ]}
       />
-      <p class="mt-1 text-xs" aria-live="polite" data-testid="save-state">
-        {#if session.storageFailed}
-          <span role="alert" class="font-medium text-danger">{m.editor_storage_failed()}</span>
-        {:else if session.dirty}
-          <span class="font-medium text-accent">{m.editor_unsaved()}</span>
-        {:else}
-          <span class="inline-flex items-center gap-1 text-muted">
-            <CircleCheck class="size-3.5" aria-hidden="true" />
-            {m.editor_saved()}
-          </span>
-        {/if}
-      </p>
+      {#if session.storageFailed || session.dirty}
+        <p class="mt-1 text-xs" aria-live="polite" data-testid="save-state">
+          {#if session.storageFailed}
+            <span role="alert" class="font-medium text-danger">{m.editor_storage_failed()}</span>
+          {:else}
+            <span class="font-medium text-accent">{m.editor_unsaved()}</span>
+          {/if}
+        </p>
+      {/if}
     </div>
     <div class="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">
       <button
@@ -158,9 +156,10 @@
       {#each TABS as t (t.key)}
         <Tabs.Trigger
           value={t.key}
-          class="shrink-0 rounded-full px-4 py-1.5 font-medium text-muted focus-visible:outline-2 focus-visible:outline-accent data-[state=active]:bg-accent data-[state=active]:text-accent-fg"
+          class="group/tab inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-1.5 font-medium text-muted focus-visible:outline-2 focus-visible:outline-accent data-[state=active]:bg-accent data-[state=active]:text-accent-fg"
         >
-          {t.label(records(data, t.key).length)}
+          {t.label()}
+          <Badge>{records(data, t.key).length}</Badge>
         </Tabs.Trigger>
       {/each}
     </Tabs.List>
