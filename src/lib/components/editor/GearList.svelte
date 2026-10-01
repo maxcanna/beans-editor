@@ -4,7 +4,7 @@
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterGear, gearForm, type GearKey } from '../../editor/gear';
   import { searchClass } from './styles';
-  import Toggle from './Toggle.svelte';
+  import ShowToggles from './ShowToggles.svelte';
 
   interface Props {
     kind: GearKey;
@@ -35,7 +35,7 @@
       />
       <input type="search" placeholder={text.search} class={searchClass} bind:value={query} />
     </label>
-    <Toggle bind:checked={showArchived} label={m.beans_show_archived()} />
+    <ShowToggles bind:showArchived />
   </div>
 
   {#if shown.length === 0}
