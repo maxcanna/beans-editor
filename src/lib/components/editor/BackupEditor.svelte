@@ -22,7 +22,6 @@
   import GearDialog from './GearDialog.svelte';
   import GearList from './GearList.svelte';
   import { Badge } from '../ui/badge';
-  import MetaList from './MetaList.svelte';
 
   interface Props {
     session: EditorSession;
@@ -33,7 +32,6 @@
 
   const data = $derived(session.data ?? {});
   const beans = $derived(records(data, 'BEANS'));
-  const count = (key: 'BREWS' | 'MILL' | 'PREPARATION') => records(data, key).length;
   const maxRating = $derived.by(() => {
     const settings = data['SETTINGS'];
     const first = Array.isArray(settings) ? settings[0] : settings;
@@ -109,15 +107,6 @@
     <FileArchive class="size-8 shrink-0 text-accent" aria-hidden="true" />
     <div class="min-w-0 flex-1 basis-56">
       <h2 class="truncate font-semibold">{session.fileName}</h2>
-      <MetaList
-        class="text-sm text-muted"
-        items={[
-          m.editor_count_beans({ count: beans.length }),
-          m.editor_count_brews({ count: count('BREWS') }),
-          m.editor_count_grinders({ count: count('MILL') }),
-          m.editor_count_methods({ count: count('PREPARATION') }),
-        ]}
-      />
       {#if session.storageFailed || session.dirty}
         <p class="mt-1 text-xs" aria-live="polite" data-testid="save-state">
           {#if session.storageFailed}

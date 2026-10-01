@@ -89,7 +89,7 @@ test('adds a bean with the fields the app expects', async ({ page }) => {
   await dialog.getByLabel('Roast date').fill('2025-04-30');
   await dialog.getByLabel('Weight (g)').fill('1000');
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByTestId('backup-editor')).toContainText('Beans: 3');
+  await expect(page.getByRole('tab', { name: 'Beans 3' })).toBeVisible();
 
   const beans = (await downloadBackup(page))['BEANS'] as Record<string, unknown>[];
   const added = beans.at(-1)!;
@@ -382,7 +382,7 @@ test('deletes a bean no brew uses', async ({ page }) => {
   await expect(page.getByRole('alertdialog')).toContainText('Delete this bean?');
   await confirm.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByRole('button', { name: /Unused Lot/ })).toBeHidden();
-  await expect(page.getByTestId('backup-editor')).toContainText('Beans: 1');
+  await expect(page.getByRole('tab', { name: 'Beans 1' })).toBeVisible();
 });
 
 test('searches and switches between cards and grid', async ({ page }) => {
