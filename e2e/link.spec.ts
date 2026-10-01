@@ -175,7 +175,7 @@ test('adds the bean to the open backup when started from the editor', async ({ p
 
   await expect(dialog).toHaveCount(0);
   const editor = page.getByTestId('backup-editor');
-  await expect(editor).toContainText('Beans: 3');
+  await expect(page.getByRole('tab', { name: 'Beans 3' })).toBeVisible();
   await expect(editor).toContainText('Colombia Motta');
   await expect(page.getByTestId('save-state')).toContainText('Unsaved');
 });
