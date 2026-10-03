@@ -113,7 +113,6 @@
       <SlidersHorizontal class="size-4" aria-hidden="true" />
       {activeFilters ? m.beans_filters_count({ count: activeFilters }) : m.beans_filters()}
     </button>
-    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
   </div>
 
   <div
@@ -149,6 +148,10 @@
         {m.beans_filter_clear()}
       </button>
     {/if}
+  </div>
+
+  <div class="flex justify-end">
+    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
   </div>
 
   {#if shown.length === 0}

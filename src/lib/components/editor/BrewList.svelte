@@ -100,7 +100,6 @@
       <SlidersHorizontal class="size-4" aria-hidden="true" />
       {activeFilters ? m.brews_filters_count({ count: activeFilters }) : m.brews_filters()}
     </button>
-    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
   </div>
   <div id="brew-filters" class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-3 sm:flex sm:flex-wrap">
     <label class="{labelClass} sm:w-44">
@@ -137,6 +136,9 @@
         {m.brews_filter_clear()}
       </button>
     {/if}
+    <span class="ml-auto">
+      <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
+    </span>
   </div>
 
   {#if shown.length === 0}
