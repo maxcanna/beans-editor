@@ -81,7 +81,7 @@
 </script>
 
 <section aria-label={m.brews_title()} class="flex flex-col gap-4">
-  <div class="flex flex-wrap items-center gap-2">
+  <div class="flex flex-wrap items-center gap-3">
     <label class="relative min-w-48 flex-1">
       <span class="sr-only">{m.brews_search()}</span>
       <Search
@@ -90,7 +90,6 @@
       />
       <input type="search" placeholder={m.brews_search()} class={searchClass} bind:value={filter.query} />
     </label>
-    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
     <button
       type="button"
       class="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent sm:hidden"
@@ -101,6 +100,7 @@
       <SlidersHorizontal class="size-4" aria-hidden="true" />
       {activeFilters ? m.brews_filters_count({ count: activeFilters }) : m.brews_filters()}
     </button>
+    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
   </div>
   <div id="brew-filters" class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-3 sm:flex sm:flex-wrap">
     <label class="{labelClass} sm:w-44">
