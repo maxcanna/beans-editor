@@ -26,6 +26,7 @@
   "editor_error_open": "Couldn't open this backup: {reason}",
   "beans_title": "Beans",
   "beans_search": "Search beans",
+  "beans_shown": "Showing {shown} of {total}",
   "beans_show_group": "Show",
   "beans_show_archived": "Show archived",
   "view_cards": "Cards",

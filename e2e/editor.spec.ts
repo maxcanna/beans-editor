@@ -134,6 +134,7 @@ test('filters beans by buy date', async ({ page }) => {
   await page.getByLabel('Buy date from').fill('2026-04-01');
   await expect(unused).toBeVisible();
   await expect(finca).toBeHidden();
+  await expect(page.getByTestId('beans-count')).toHaveText(/^Showing 1 of \d+$/);
   await page.getByLabel('Buy date to').fill('2026-04-05');
   await expect(unused).toBeHidden();
   await page.getByLabel('Buy date from').fill('2026-03-10');

@@ -150,8 +150,13 @@
     {/if}
   </div>
 
-  <div class="flex justify-end">
-    <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
+  <div class="flex items-center gap-3 text-sm text-muted">
+    <p aria-live="polite" data-testid="beans-count">
+      {m.beans_shown({ shown: shown.length, total: beans.length })}
+    </p>
+    <span class="ml-auto">
+      <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
+    </span>
   </div>
 
   {#if shown.length === 0}
