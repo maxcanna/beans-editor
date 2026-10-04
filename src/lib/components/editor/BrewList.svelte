@@ -2,7 +2,13 @@
   import { Search, SlidersHorizontal, Star } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
-  import { emptyBrewFilter, filterBrews, sortBrews, type BrewSortKey } from '../../editor/brews';
+  import {
+    emptyBrewFilter,
+    filterBrews,
+    sortBrews,
+    type BrewFilter,
+    type BrewSortKey,
+  } from '../../editor/brews';
   import { nextSort, type Sort } from '../../editor/sort';
   import { searchClass, inputClass, labelClass } from './styles';
   import SortButton from './SortButton.svelte';
@@ -18,6 +24,8 @@
 
   interface Props {
     brews: readonly BackupRecord[];
+    /** Kept by the editor, so they survive moving to another section. */
+    filter: BrewFilter;
     names: ReadonlyMap<string, string>;
     beans: readonly Option[];
     methods: readonly Option[];
@@ -25,8 +33,7 @@
     onopen: (uuid: string) => void;
   }
 
-  let { brews, names, beans, methods, mills, onopen }: Props = $props();
-  let filter = $state(emptyBrewFilter());
+  let { brews, filter, names, beans, methods, mills, onopen }: Props = $props();
   let sort = $state<Sort<BrewSortKey> | null>(null);
   const shown = $derived(sortBrews(filterBrews(brews, names, filter), names, sort));
 
@@ -131,7 +138,7 @@
       <button
         type="button"
         class="rounded-full px-3 py-1 font-medium text-fg hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
-        onclick={() => (filter = emptyBrewFilter())}
+        onclick={() => Object.assign(filter, emptyBrewFilter())}
       >
         {m.brews_filter_clear()}
       </button>

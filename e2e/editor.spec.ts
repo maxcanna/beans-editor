@@ -579,3 +579,18 @@ test('guards grinders and methods that brews use, and offers no way to add a gri
   ]);
   expect((json['MILL'] as { name: string }[]).map((g) => g.name)).toEqual(['Grinder']);
 });
+
+test('keeps the search and filters of each section while moving between sections', async ({ page }) => {
+  await openBackup(page, backupData());
+  await page.getByPlaceholder('Search beans').fill('Finca');
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  await page.getByPlaceholder('Search brews').fill('zzz');
+  await page.getByRole('tab', { name: /^Grinders/ }).click();
+  await page.getByPlaceholder('Search grinders').fill('mill');
+  await page.getByRole('tab', { name: /^Beans/ }).click();
+  await expect(page.getByPlaceholder('Search beans')).toHaveValue('Finca');
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  await expect(page.getByPlaceholder('Search brews')).toHaveValue('zzz');
+  await page.getByRole('tab', { name: /^Grinders/ }).click();
+  await expect(page.getByPlaceholder('Search grinders')).toHaveValue('mill');
+});

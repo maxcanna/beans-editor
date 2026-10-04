@@ -22,6 +22,7 @@
   import GearDialog from './GearDialog.svelte';
   import GearList from './GearList.svelte';
   import { Badge } from '../ui/badge';
+  import { createFilters } from '../../editor/filters.svelte';
 
   interface Props {
     session: EditorSession;
@@ -51,6 +52,7 @@
   // Raw, so the record stays a plain object that IndexedDB can store.
   let editing = $state.raw<{ key: Editable; record: BackupRecord; isNew: boolean } | null>(null);
   let tab = $state<Editable>('BEANS');
+  const filters = createFilters();
   let addingFromLink = $state(false);
   const loadAddFromLink = () => import('../AddFromLink.svelte');
 
@@ -157,6 +159,7 @@
       {#if tab === 'BEANS'}
         <BeanList
           {beans}
+          filters={filters.beans}
           brewCount={(uuid) => brewsUsing(data, 'BEANS', uuid)}
           onopen={(uuid) => openRecord('BEANS', uuid)}
           onadd={() => (editing = { key: 'BEANS', record: newBean(), isNew: true })}
@@ -169,6 +172,7 @@
       {#if tab === 'BREWS'}
         <BrewList
           brews={records(data, 'BREWS')}
+          filter={filters.brews}
           {names}
           beans={beanOptions}
           methods={methodOptions}
@@ -182,6 +186,7 @@
       {#if tab === 'MILL'}
         <GearList
           kind="MILL"
+          filter={filters.mills}
           items={records(data, 'MILL')}
           brewCount={(uuid) => brewsUsing(data, 'MILL', uuid)}
           onopen={(uuid) => openRecord('MILL', uuid)}
@@ -193,6 +198,7 @@
       {#if tab === 'PREPARATION'}
         <GearList
           kind="PREPARATION"
+          filter={filters.methods}
           items={records(data, 'PREPARATION')}
           brewCount={(uuid) => brewsUsing(data, 'PREPARATION', uuid)}
           onopen={(uuid) => openRecord('PREPARATION', uuid)}
