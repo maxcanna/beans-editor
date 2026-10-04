@@ -11,9 +11,12 @@
   import ViewToggle from './ViewToggle.svelte';
   import ShowToggles from './ShowToggles.svelte';
   import { layout } from './view.svelte';
+  import type { BeanFilters } from '../../editor/filters.svelte';
 
   interface Props {
     beans: readonly BackupRecord[];
+    /** Kept by the editor, so they survive moving to another section. */
+    filters: BeanFilters;
     brewCount: (uuid: string) => number;
     onopen: (uuid: string) => void;
     onadd: () => void;
@@ -21,29 +24,27 @@
     onaddlink: () => void;
   }
 
-  let { beans, brewCount, onopen, onadd, onaddlink }: Props = $props();
+  let { beans, filters, brewCount, onopen, onadd, onaddlink }: Props = $props();
 
-  let query = $state('');
-  let showArchived = $state(false);
-  let showFrozen = $state(false);
-  /** Buy date and roast date ranges, local days. */
-  let from = $state('');
-  let to = $state('');
-  let roastFrom = $state('');
-  let roastTo = $state('');
   let sort = $state<Sort<BeanSortKey> | null>(null);
-  const shown = $derived(
-    sortBeans(filterBeans(beans, { query, showArchived, showFrozen, from, to, roastFrom, roastTo }), sort),
-  );
+  const shown = $derived(sortBeans(filterBeans(beans, filters), sort));
   // On phones the filters and the archived/frozen switches would fill the screen, so they fold behind a button;
   // wider screens always show them.
   let filtersOpen = $state(false);
   const activeFilters = $derived(
-    [from, to, roastFrom, roastTo, showArchived, showFrozen].filter(Boolean).length,
+    Object.entries(filters).filter(([key, value]) => key !== 'query' && value).length,
   );
+  const filtered = $derived(activeFilters > 0 || filters.query !== '');
   const clearFilters = () => {
-    from = to = roastFrom = roastTo = '';
-    showArchived = showFrozen = false;
+    Object.assign(filters, {
+      query: '',
+      showArchived: false,
+      showFrozen: false,
+      from: '',
+      to: '',
+      roastFrom: '',
+      roastTo: '',
+    });
   };
 
   const sortOf = (key: BeanSortKey) => (sort?.key === key ? sort.direction : null);
@@ -100,7 +101,7 @@
         type="search"
         placeholder={m.beans_search()}
         class="w-full rounded-full border border-border bg-surface py-2 pr-4 pl-9 text-sm focus-visible:outline-2 focus-visible:outline-accent"
-        bind:value={query}
+        bind:value={filters.query}
       />
     </label>
     <button
@@ -121,39 +122,39 @@
   >
     <!-- As tall as the date inputs, so the toggles line up with them on wide screens. -->
     <div class="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-3 sm:h-[38px]">
-      <ShowToggles bind:showArchived bind:showFrozen />
+      <ShowToggles bind:showArchived={filters.showArchived} bind:showFrozen={filters.showFrozen} />
     </div>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_roast_from()}
-      <input class={inputClass} type="date" bind:value={roastFrom} />
+      <input class={inputClass} type="date" bind:value={filters.roastFrom} />
     </label>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_roast_to()}
-      <input class={inputClass} type="date" bind:value={roastTo} />
+      <input class={inputClass} type="date" bind:value={filters.roastTo} />
     </label>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_from()}
-      <input class={inputClass} type="date" bind:value={from} />
+      <input class={inputClass} type="date" bind:value={filters.from} />
     </label>
     <label class="{labelClass} sm:w-44">
       {m.beans_filter_to()}
-      <input class={inputClass} type="date" bind:value={to} />
+      <input class={inputClass} type="date" bind:value={filters.to} />
     </label>
-    {#if activeFilters}
-      <button
-        type="button"
-        class="col-span-2 rounded-full px-3 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
-        onclick={clearFilters}
-      >
-        {m.beans_filter_clear()}
-      </button>
-    {/if}
   </div>
 
   <div class="flex items-center gap-3 text-sm text-muted">
     <p aria-live="polite" data-testid="beans-count">
       {m.beans_shown({ shown: shown.length, total: beans.length })}
     </p>
+    {#if filtered}
+      <button
+        type="button"
+        class="rounded-full px-3 py-1 font-medium text-fg hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+        onclick={clearFilters}
+      >
+        {m.beans_filter_clear()}
+      </button>
+    {/if}
     <span class="ml-auto">
       <ViewToggle view={layout.view} onchange={(next) => (layout.view = next)} />
     </span>
