@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Archive, Link, Plus, Search, Snowflake, SlidersHorizontal } from '@lucide/svelte';
+  import { Link, Plus, Search, SlidersHorizontal } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterBeans, isFrozen, localDay, sortBeans, type BeanSortKey } from '../../editor/beans';
@@ -10,6 +10,7 @@
   import SortButton from './SortButton.svelte';
   import ViewToggle from './ViewToggle.svelte';
   import ShowToggles from './ShowToggles.svelte';
+  import StateBadges from './StateBadges.svelte';
   import { layout } from './view.svelte';
   import type { BeanFilters } from '../../editor/filters.svelte';
 
@@ -175,22 +176,7 @@
           >
             <span class="flex items-start gap-2">
               <span class="flex-1 font-semibold">{text(bean, 'name')}</span>
-              {#if archived(bean)}
-                <span
-                  class="inline-flex shrink-0 items-center gap-1 rounded-full bg-border/50 px-2 py-0.5 text-xs whitespace-nowrap text-muted"
-                >
-                  <Archive class="size-3" aria-hidden="true" />
-                  {m.beans_archived()}
-                </span>
-              {/if}
-              {#if isFrozen(bean)}
-                <span
-                  class="inline-flex shrink-0 items-center gap-1 rounded-full bg-border/50 px-2 py-0.5 text-xs whitespace-nowrap text-muted"
-                >
-                  <Snowflake class="size-3" aria-hidden="true" />
-                  {m.beans_frozen()}
-                </span>
-              {/if}
+              <StateBadges archived={archived(bean)} frozen={isFrozen(bean)} />
             </span>
             <MetaList class="text-sm text-muted" items={[text(bean, 'roaster'), day(bean, 'roastingDate')]} />
             <MetaList
@@ -277,20 +263,7 @@
                 >
                   {text(bean, 'name')}
                 </button>
-                {#if archived(bean)}
-                  <span
-                    class="ml-2 rounded-full bg-border/50 px-2 py-0.5 text-xs font-normal whitespace-nowrap text-muted"
-                  >
-                    {m.beans_archived()}
-                  </span>
-                {/if}
-                {#if isFrozen(bean)}
-                  <span
-                    class="ml-2 rounded-full bg-border/50 px-2 py-0.5 text-xs font-normal whitespace-nowrap text-muted"
-                  >
-                    {m.beans_frozen()}
-                  </span>
-                {/if}
+                <StateBadges class="ml-2 align-middle" archived={archived(bean)} frozen={isFrozen(bean)} />
               </th>
               <td class="px-4 py-2">{text(bean, 'roaster')}</td>
               <td class="px-4 py-2 whitespace-nowrap"
