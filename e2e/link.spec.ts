@@ -200,7 +200,7 @@ test('puts the roast date in the link, but not what the app would drop', async (
   const href = (await dialog.getByTestId('open-in-beanconqueror').getAttribute('href'))!;
   const payload = new URL(href).searchParams.get('shareUserBean0')!;
   const bytes = Buffer.from(payload, 'base64').toString('latin1');
-  const iso = (day: string) => page.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), day);
+  const iso = (day: string) => page.evaluate((d) => new Date(`${d}T12:00:00`).toISOString(), day);
   expect(bytes).toContain(await iso('2026-09-15'));
 });
 
@@ -272,7 +272,7 @@ test('reads a shared product page and lets the user add dates before opening Bea
   const href = (await dialog.getByTestId('open-in-beanconqueror').getAttribute('href'))!;
   const bytes = Buffer.from(new URL(href).searchParams.get('shareUserBean0')!, 'base64').toString('latin1');
   expect(bytes).toContain('Colombia Motta');
-  expect(bytes).toContain(await page.evaluate(() => new Date('2026-09-15T00:00:00').toISOString()));
+  expect(bytes).toContain(await page.evaluate(() => new Date('2026-09-15T12:00:00').toISOString()));
 });
 
 test('offers to fill in a shared link by hand when the page can’t be read', async ({ page }) => {

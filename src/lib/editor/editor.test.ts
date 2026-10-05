@@ -8,6 +8,7 @@ import {
   filterBeans,
   sharedFromBeanForm,
   isoFromLocalDay,
+  isoFromLocalNoon,
   localDay,
   newBean,
   validateBean,
@@ -69,6 +70,29 @@ describe('beans', () => {
     expect(localDay('')).toBe('');
     expect(localDay('not a date')).toBe('');
     expect(isoFromLocalDay('')).toBe('');
+  });
+
+  it('puts a link’s dates at local noon, so another timezone keeps the same day', () => {
+    const iso = isoFromLocalNoon('2025-04-30');
+    expect(localDay(iso)).toBe('2025-04-30');
+    expect(new Date(iso).getHours()).toBe(12);
+    expect(isoFromLocalNoon('')).toBe('');
+    const form = beanForm(newBean());
+    form.name = 'Dated';
+    form.roastingDate = '2025-04-30';
+    expect(sharedFromBeanForm(form).roastingDate).toBe(iso);
+  });
+
+  it('carries the origin prices into a link and back', () => {
+    const form = beanForm(newBean());
+    form.name = 'Priced';
+    form.bean_information = [{ ...emptyOrigin(), country: 'Kenya', purchasing_price: 12, fob_price: 7 }];
+    const shared = sharedFromBeanForm(form);
+    expect(shared.bean_information).toEqual([{ country: 'Kenya', purchasing_price: 12, fob_price: 7 }]);
+    expect(beanFormFromShared(shared).bean_information[0]).toMatchObject({
+      purchasing_price: 12,
+      fob_price: 7,
+    });
   });
 
   it('writes an unchanged bean back exactly as it was', () => {

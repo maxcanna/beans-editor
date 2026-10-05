@@ -37,6 +37,10 @@
     { key: 'harvest_time', label: m.origin_harvest_time },
     { key: 'certification', label: m.origin_certification },
   ];
+  const PRICE_FIELDS: { key: 'purchasing_price' | 'fob_price'; label: () => string }[] = [
+    { key: 'purchasing_price', label: m.origin_purchasing_price },
+    { key: 'fob_price', label: m.origin_fob_price },
+  ];
 </script>
 
 {#snippet error(message: string | undefined, id: string)}
@@ -239,6 +243,19 @@
             bind:value={origin.percentage}
           />
         </label>
+        {#each PRICE_FIELDS as field (field.key)}
+          <label class={labelClass}>
+            {field.label()}
+            <input
+              class={inputClass}
+              type="number"
+              min="0"
+              step="any"
+              inputmode="decimal"
+              bind:value={origin[field.key]}
+            />
+          </label>
+        {/each}
       </div>
     </div>
   {/each}

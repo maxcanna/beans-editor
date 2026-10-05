@@ -90,6 +90,8 @@
   "origin_harvest_time": "Harvested",
   "origin_certification": "Certification",
   "origin_percentage": "Percentage",
+  "origin_purchasing_price": "Purchase price",
+  "origin_fob_price": "FOB price",
   "bean_save": "Save",
   "bean_cancel": "Cancel",
   "bean_delete": "Delete",
