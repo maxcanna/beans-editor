@@ -12,6 +12,7 @@
   import { nextSort, type Sort } from '../../editor/sort';
   import { searchClass, inputClass, labelClass } from './styles';
   import ShowToggles from './ShowToggles.svelte';
+  import StateBadges from './StateBadges.svelte';
   import SortButton from './SortButton.svelte';
   import ViewToggle from './ViewToggle.svelte';
   import VirtualList from './VirtualList.svelte';
@@ -72,6 +73,10 @@
   const filtered = $derived(activeFilters > 0 || filter.query !== '');
 
   const value = (brew: BackupRecord, key: string) => (brew as Record<string, unknown>)[key];
+  const badges = (brew: BackupRecord) => {
+    const state = states.get(String(value(brew, 'bean')));
+    return { archived: !!state?.archived, frozen: !!state?.frozen };
+  };
   const name = (uuid: unknown) =>
     typeof uuid === 'string' && uuid ? (names.get(uuid) ?? m.brews_missing()) : '';
   const amount = (n: unknown, unit: string) => (typeof n === 'number' && n > 0 ? `${n} ${unit}` : '');
@@ -180,7 +185,10 @@
               class="flex h-full w-full flex-col gap-1 rounded-2xl border border-border bg-surface p-4 text-left shadow-sm hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-accent"
               onclick={() => onopen(brew.config.uuid)}
             >
-              <span class="truncate font-semibold">{name(value(brew, 'bean')) || m.brews_none()}</span>
+              <span class="flex items-center gap-2">
+                <span class="truncate font-semibold">{name(value(brew, 'bean')) || m.brews_none()}</span>
+                <StateBadges {...badges(brew)} />
+              </span>
               <span class="truncate text-sm text-muted">
                 {[when(brew), name(value(brew, 'method_of_preparation')), name(value(brew, 'mill'))]
                   .filter(Boolean)
@@ -248,7 +256,12 @@
               {when(brew)}
             </button>
           </th>
-          <td class="truncate px-4 py-2">{name(value(brew, 'bean')) || m.brews_none()}</td>
+          <td class="px-4 py-2">
+            <span class="flex items-center gap-2">
+              <span class="truncate">{name(value(brew, 'bean')) || m.brews_none()}</span>
+              <StateBadges {...badges(brew)} />
+            </span>
+          </td>
           <td class="truncate px-4 py-2">{name(value(brew, 'method_of_preparation'))}</td>
           <td class="truncate px-4 py-2">{name(value(brew, 'mill'))}</td>
           <td class="px-4 py-2 text-right tabular-nums">{number(value(brew, 'grind_weight'))}</td>

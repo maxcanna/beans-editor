@@ -315,7 +315,7 @@ test('includes frozen beans with a Show frozen toggle and labels them', async ({
   // The label is in the row, in both layouts.
   for (const layout of ['Cards', 'Grid']) {
     await page.getByRole('button', { name: layout }).click();
-    await expect(page.getByText('Frozen', { exact: true })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Frozen' })).toBeVisible();
   }
   await show.click();
   await expect(icy).toBeHidden();
@@ -368,6 +368,13 @@ test('shows brews of frozen beans and hides those of archived beans, until the s
   await frozen.click();
   await expect(count).toHaveText('Showing 3 of 3');
   if (phone) await expect(toggle).toHaveText('Filters: 1');
+
+  // Their beans' state shows as icon badges, in both layouts.
+  for (const layout of ['Cards', 'Grid']) {
+    await page.getByRole('button', { name: layout }).click();
+    await expect(page.getByRole('img', { name: 'Frozen' })).toHaveCount(1);
+    await expect(page.getByRole('img', { name: 'Archived' })).toHaveCount(1);
+  }
 
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await expect(count).toHaveText('Showing 2 of 3');
