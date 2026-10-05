@@ -60,14 +60,16 @@
     { key: 'water', label: m.brews_col_water, width: '7rem', end: true },
     { key: 'rating', label: m.bean_rating_short, width: '6rem', end: true },
   ];
-  const filtered = $derived(Object.values(filter).some(Boolean));
   // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
   let filtersOpen = $state(false);
+  // Show frozen starts on here, so it counts once it's switched off.
+  const defaults = emptyBrewFilter();
   const activeFilters = $derived(
     (['bean', 'method', 'mill', 'from', 'to', 'showArchived', 'showFrozen'] as const).filter(
-      (key) => filter[key],
+      (key) => filter[key] !== defaults[key],
     ).length,
   );
+  const filtered = $derived(activeFilters > 0 || filter.query !== '');
 
   const value = (brew: BackupRecord, key: string) => (brew as Record<string, unknown>)[key];
   const name = (uuid: unknown) =>

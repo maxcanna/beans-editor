@@ -82,7 +82,7 @@ describe('brews', () => {
     expect(ids({ from: day, to: day })).toEqual(['r2']);
   });
 
-  it('hides brews of archived or frozen beans until asked, unless their bean is picked', () => {
+  it('hides brews of archived beans until asked and of frozen beans once switched off, unless their bean is picked', () => {
     const withStates: BackupData = {
       ...data,
       BEANS: [
@@ -107,9 +107,9 @@ describe('brews', () => {
         (b) => b.config.uuid,
       );
     // A brew whose bean is missing stays visible.
-    expect(ids({})).toEqual(['br-gone', 'br-fresh']);
-    expect(ids({ showArchived: true })).toEqual(['br-gone', 'br-fresh', 'br-old']);
-    expect(ids({ showFrozen: true })).toEqual(['br-gone', 'br-fresh', 'br-thawed', 'br-ice']);
+    expect(ids({})).toEqual(['br-gone', 'br-fresh', 'br-thawed', 'br-ice']);
+    expect(ids({ showFrozen: false })).toEqual(['br-gone', 'br-fresh']);
+    expect(ids({ showArchived: true })).toEqual(['br-gone', 'br-fresh', 'br-thawed', 'br-ice', 'br-old']);
     expect(ids({ bean: 'ice' })).toEqual(['br-ice']);
   });
 });
