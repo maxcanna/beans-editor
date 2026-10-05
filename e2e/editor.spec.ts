@@ -315,10 +315,65 @@ test('includes frozen beans with a Show frozen toggle and labels them', async ({
   // The label is in the row, in both layouts.
   for (const layout of ['Cards', 'Grid']) {
     await page.getByRole('button', { name: layout }).click();
-    await expect(page.getByText('Frozen', { exact: true })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Frozen' })).toBeVisible();
   }
   await show.click();
   await expect(icy).toBeHidden();
+});
+
+test('hides brews of archived and frozen beans until their switches are on', async ({ page }) => {
+  const data = backupData();
+  const brew = data.BREWS[0];
+  data.BEANS.push(
+    {
+      ...data.BEANS[0],
+      name: 'Icy Lot',
+      frozenDate: '2026-03-01T10:00:00.000Z',
+      config: { uuid: 'bean-icy', unix_timestamp: 1_700_200_000 },
+    },
+    {
+      ...data.BEANS[0],
+      name: 'Old Lot',
+      finished: true,
+      config: { uuid: 'bean-old', unix_timestamp: 1_700_300_000 },
+    },
+  );
+  data.BREWS.push(
+    { ...brew, bean: 'bean-icy', config: { uuid: 'brew-icy', unix_timestamp: 1_700_200_000 } },
+    { ...brew, bean: 'bean-old', config: { uuid: 'brew-old', unix_timestamp: 1_700_300_000 } },
+  );
+  await openBackup(page, data);
+  await page.getByRole('tab', { name: 'Brews 3' }).click();
+  const count = page.getByTestId('brews-count');
+  // Hidden by default, like the beans themselves.
+  await expect(count).toHaveText('Showing 1 of 3');
+  await expect(page.getByRole('button', { name: 'Clear filters' })).toBeHidden();
+
+  const toggle = page.locator('button[aria-controls="brew-filters"]');
+  const phone = await toggle.isVisible();
+  if (phone) {
+    await expect(toggle).toHaveText('Filters');
+    await toggle.click();
+  }
+  const frozen = page.getByRole('button', { name: 'Show frozen' });
+  const archived = page.getByRole('button', { name: 'Show archived' });
+  await expect(frozen).toHaveAttribute('aria-pressed', 'false');
+  await expect(archived).toHaveAttribute('aria-pressed', 'false');
+  await frozen.click();
+  await expect(count).toHaveText('Showing 2 of 3');
+  await archived.click();
+  await expect(count).toHaveText('Showing 3 of 3');
+  if (phone) await expect(toggle).toHaveText('Filters: 2');
+
+  // Their beans' state shows as icon badges, in both layouts.
+  for (const layout of ['Cards', 'Grid']) {
+    await page.getByRole('button', { name: layout }).click();
+    await expect(page.getByRole('img', { name: 'Frozen' })).toHaveCount(1);
+    await expect(page.getByRole('img', { name: 'Archived' })).toHaveCount(1);
+  }
+
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(count).toHaveText('Showing 1 of 3');
 });
 
 test('leads the bean table with roast date and buy date, and the brew table with brew date', async ({
@@ -593,4 +648,27 @@ test('keeps the search and filters of each section while moving between sections
   await expect(page.getByPlaceholder('Search brews')).toHaveValue('zzz');
   await page.getByRole('tab', { name: /^Grinders/ }).click();
   await expect(page.getByPlaceholder('Search grinders')).toHaveValue('mill');
+});
+
+test('marks archived grinders and methods with an icon badge only', async ({ page }) => {
+  const base = backupData();
+  const data = {
+    ...base,
+    MILL: [
+      ...(base.MILL as unknown[]),
+      { name: 'Old Grinder', finished: true, config: { uuid: 'mill-old', unix_timestamp: 1_700_000_000 } },
+    ],
+    PREPARATION: [
+      ...(base.PREPARATION as unknown[]),
+      { name: 'Old Method', finished: true, config: { uuid: 'prep-old', unix_timestamp: 1_700_000_000 } },
+    ],
+  };
+  await openBackup(page, data);
+  for (const tab of [/^Grinders/, /^Methods/]) {
+    await page.getByRole('tab', { name: tab }).click();
+    await page.getByRole('button', { name: 'Show archived' }).click();
+    await expect(page.getByRole('img', { name: 'Archived' })).toHaveCount(1);
+    // The badge carries no visible word.
+    await expect(page.getByText('Archived', { exact: true })).toHaveCount(0);
+  }
 });
