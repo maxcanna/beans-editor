@@ -111,8 +111,8 @@ export interface BrewFilter {
   from: string;
   to: string;
   /**
-   * Brews of archived beans are hidden unless asked for, and so are those of frozen beans once switched off; a brew
-   * takes its state from its bean. Frozen ones show by default, since a bean is brewed after it's thawed.
+   * Brews of archived or frozen beans are hidden unless asked for; a brew takes its state from its bean. Frozen
+   * means the bean was ever frozen, thawed or not: a bean is brewed after it's thawed.
    */
   showArchived: boolean;
   showFrozen: boolean;
@@ -126,7 +126,7 @@ export const emptyBrewFilter = (): BrewFilter => ({
   from: '',
   to: '',
   showArchived: false,
-  showFrozen: true,
+  showFrozen: false,
 });
 
 /**

@@ -63,11 +63,9 @@
   ];
   // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
   let filtersOpen = $state(false);
-  // Show frozen starts on here, so it counts once it's switched off.
-  const defaults = emptyBrewFilter();
   const activeFilters = $derived(
     (['bean', 'method', 'mill', 'from', 'to', 'showArchived', 'showFrozen'] as const).filter(
-      (key) => filter[key] !== defaults[key],
+      (key) => filter[key],
     ).length,
   );
   const filtered = $derived(activeFilters > 0 || filter.query !== '');
