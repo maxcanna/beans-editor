@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BackupData, BackupRecord } from '../formats/backup/backup';
 import {
   applyBrewForm,
+  beanStates,
   brewForm,
   emptyBrewFilter,
   filterBrews,
@@ -79,6 +80,37 @@ describe('brews', () => {
     expect(ids({ query: 'comandante' })).toEqual(['r3', 'r1']);
     const day = localDateTime(1_700_100_000).slice(0, 10);
     expect(ids({ from: day, to: day })).toEqual(['r2']);
+  });
+
+  it('hides brews of archived or frozen beans until asked, unless their bean is picked', () => {
+    const withStates: BackupData = {
+      ...data,
+      BEANS: [
+        { name: 'Old', finished: true, config: config('old') },
+        { name: 'Ice', frozenDate: '2025-05-01T10:00:00.000Z', config: config('ice') },
+        {
+          name: 'Thawed',
+          frozenDate: '2025-05-01T10:00:00.000Z',
+          unfrozenDate: '2025-05-20T10:00:00.000Z',
+          config: config('thawed'),
+        },
+        { name: 'Fresh', config: config('fresh') },
+      ],
+      BREWS: ['old', 'ice', 'thawed', 'fresh', 'gone'].map((bean, i) => ({
+        bean,
+        config: config(`br-${bean}`, 1_700_000_000 + i),
+      })),
+    };
+    const states = beanStates(withStates);
+    const ids = (f: Partial<ReturnType<typeof emptyBrewFilter>>) =>
+      filterBrews(withStates.BREWS!, nameIndex(withStates), { ...emptyBrewFilter(), ...f }, states).map(
+        (b) => b.config.uuid,
+      );
+    // A brew whose bean is missing stays visible.
+    expect(ids({})).toEqual(['br-gone', 'br-fresh']);
+    expect(ids({ showFrozen: true })).toEqual(['br-gone', 'br-fresh', 'br-thawed', 'br-ice']);
+    expect(ids({ showArchived: true })).toEqual(['br-gone', 'br-fresh', 'br-old']);
+    expect(ids({ bean: 'ice' })).toEqual(['br-ice']);
   });
 });
 

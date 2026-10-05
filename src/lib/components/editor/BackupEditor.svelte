@@ -4,7 +4,7 @@
   import { m } from '$paraglide/messages';
   import { writeBackup, type BackupRecord } from '../../formats/backup/backup';
   import { newBean } from '../../editor/beans';
-  import { nameIndex } from '../../editor/brews';
+  import { beanStates, nameIndex } from '../../editor/brews';
   import { download, outputName } from '../../editor/output';
   import {
     addRecord,
@@ -64,6 +64,7 @@
   const methodOptions = $derived(options('PREPARATION'));
   const millOptions = $derived(options('MILL'));
   const names = $derived(nameIndex(data));
+  const beanState = $derived(beanStates(data));
 
   function openRecord(key: Editable, uuid: string) {
     const record = findRecord(data, key, uuid);
@@ -174,6 +175,7 @@
           brews={records(data, 'BREWS')}
           filter={filters.brews}
           {names}
+          states={beanState}
           beans={beanOptions}
           methods={methodOptions}
           mills={millOptions}

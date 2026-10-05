@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { Archive, Search } from '@lucide/svelte';
+  import { Search } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/backup';
   import { filterGear, gearForm, type GearKey } from '../../editor/gear';
   import { searchClass } from './styles';
   import ShowToggles from './ShowToggles.svelte';
+  import StateBadges from './StateBadges.svelte';
   import type { GearFilter } from '../../editor/filters.svelte';
 
   interface Props {
@@ -55,14 +56,7 @@
           >
             <span class="flex items-start gap-2">
               <span class="flex-1 font-semibold">{form.name}</span>
-              {#if form.finished}
-                <span
-                  class="inline-flex items-center gap-1 rounded-full bg-border/50 px-2 py-0.5 text-xs text-muted"
-                >
-                  <Archive class="size-3" aria-hidden="true" />
-                  {m.beans_archived()}
-                </span>
-              {/if}
+              <StateBadges archived={form.finished} frozen={false} />
             </span>
             <span class="text-sm text-muted">{m.beans_brews({ count: brewCount(item.config.uuid) })}</span>
             {#if form.note}<span class="line-clamp-2 text-sm text-muted">{form.note}</span>{/if}
