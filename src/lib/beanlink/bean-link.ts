@@ -13,6 +13,8 @@ export interface SharedOrigin {
   processing?: string;
   certification?: string;
   percentage?: number;
+  purchasing_price?: number;
+  fob_price?: number;
 }
 
 /**
@@ -101,6 +103,11 @@ function encodeOrigin(origin: SharedOrigin): ProtoWriter {
   });
   const percentage = wholeNumber(origin.percentage);
   if (percentage !== undefined) w.uint(10, percentage);
+  // Both are uint32 in BeanProto, so fractions are rounded like the cost.
+  const purchasingPrice = wholeNumber(origin.purchasing_price);
+  if (purchasingPrice !== undefined) w.uint(11, purchasingPrice);
+  const fobPrice = wholeNumber(origin.fob_price);
+  if (fobPrice !== undefined) w.uint(12, fobPrice);
   return w;
 }
 

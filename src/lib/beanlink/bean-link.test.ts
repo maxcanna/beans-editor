@@ -17,6 +17,8 @@ const root = protobuf.Root.fromJSON({
         processing: { type: 'string', id: 8 },
         certification: { type: 'string', id: 9 },
         percentage: { type: 'uint32', id: 10 },
+        purchasing_price: { type: 'uint32', id: 11 },
+        fob_price: { type: 'uint32', id: 12 },
       },
     },
     BeanProto: {
@@ -72,7 +74,15 @@ const bean: SharedBean = {
   url: 'https://example.com/guji',
   ean_article_number: '1234567890123',
   bean_information: [
-    { country: 'Ethiopia', region: 'Guji', elevation: '2100', variety: '74110', percentage: 100 },
+    {
+      country: 'Ethiopia',
+      region: 'Guji',
+      elevation: '2100',
+      variety: '74110',
+      percentage: 100,
+      purchasing_price: 12.5,
+      fob_price: 8,
+    },
   ],
   external_images: ['https://example.com/guji.jpg'],
 };
@@ -83,6 +93,7 @@ describe('bean links', () => {
       ...bean,
       // BeanProto's cost is a uint64, so the price is rounded.
       cost: 19,
+      bean_information: [{ ...bean.bean_information![0], purchasing_price: 13 }],
       roast: 7,
       beanMix: 1,
       bean_roasting_type: 1,
