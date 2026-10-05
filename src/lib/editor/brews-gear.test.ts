@@ -107,8 +107,8 @@ describe('brews', () => {
         (b) => b.config.uuid,
       );
     // A brew whose bean is missing stays visible.
-    expect(ids({})).toEqual(['br-gone', 'br-fresh', 'br-thawed']);
-    expect(ids({ showArchived: true })).toEqual(['br-gone', 'br-fresh', 'br-thawed', 'br-old']);
+    expect(ids({})).toEqual(['br-gone', 'br-fresh']);
+    expect(ids({ showArchived: true })).toEqual(['br-gone', 'br-fresh', 'br-old']);
     expect(ids({ showFrozen: true })).toEqual(['br-gone', 'br-fresh', 'br-thawed', 'br-ice']);
     expect(ids({ bean: 'ice' })).toEqual(['br-ice']);
   });
