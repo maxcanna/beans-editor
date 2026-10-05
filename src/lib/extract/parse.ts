@@ -21,7 +21,7 @@ export interface ShopifyProduct {
   }[];
 }
 
-type OriginKey = Exclude<keyof SharedOrigin, 'percentage'>;
+type OriginKey = Exclude<keyof SharedOrigin, 'percentage' | 'purchasing_price' | 'fob_price'>;
 type Field = OriginKey | 'aromatics' | 'weight' | 'cost' | 'roastingType' | 'roaster' | 'name' | 'ean';
 
 /** Labels seen on roaster pages, in English, Italian, German, French, Spanish and Portuguese. */
