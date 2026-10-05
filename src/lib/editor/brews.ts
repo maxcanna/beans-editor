@@ -1,4 +1,5 @@
 import type { BackupData, BackupRecord } from '../formats/backup/backup';
+import { isFrozen } from './beans';
 import { records } from './records';
 import { sortRecords, type Sort } from './sort';
 
@@ -109,6 +110,9 @@ export interface BrewFilter {
   /** Local days, `YYYY-MM-DD`, inclusive; empty for no limit. */
   from: string;
   to: string;
+  /** Brews of archived or frozen beans are hidden unless asked for; a brew takes its state from its bean. */
+  showArchived: boolean;
+  showFrozen: boolean;
 }
 
 export const emptyBrewFilter = (): BrewFilter => ({
@@ -118,7 +122,18 @@ export const emptyBrewFilter = (): BrewFilter => ({
   mill: '',
   from: '',
   to: '',
+  showArchived: false,
+  showFrozen: false,
 });
+
+/** Whether each bean is archived or in the freezer, by uuid, so brews can inherit it. */
+export function beanStates(data: BackupData): Map<string, { archived: boolean; frozen: boolean }> {
+  const states = new Map<string, { archived: boolean; frozen: boolean }>();
+  for (const bean of records(data, 'BEANS')) {
+    states.set(bean.config.uuid, { archived: field(bean, 'finished') === true, frozen: isFrozen(bean) });
+  }
+  return states;
+}
 
 /** Names of the records brews point at, for display and search. */
 export function nameIndex(data: BackupData): Map<string, string> {
@@ -137,6 +152,7 @@ export function filterBrews(
   brews: readonly BackupRecord[],
   names: ReadonlyMap<string, string>,
   filter: BrewFilter,
+  states: ReadonlyMap<string, { archived: boolean; frozen: boolean }> = new Map(),
 ): BackupRecord[] {
   const words = filter.query.toLowerCase().split(/\s+/).filter(Boolean);
   const start = filter.from ? new Date(`${filter.from}T00:00`).getTime() / 1000 : -Infinity;
@@ -144,6 +160,10 @@ export function filterBrews(
   return brews
     .filter((brew) => {
       if (filter.bean && field(brew, 'bean') !== filter.bean) return false;
+      // Picking a bean outright shows its brews whatever its state.
+      const state = filter.bean ? undefined : states.get(String(field(brew, 'bean')));
+      if (!filter.showArchived && state?.archived) return false;
+      if (!filter.showFrozen && state?.frozen) return false;
       if (filter.method && field(brew, 'method_of_preparation') !== filter.method) return false;
       if (filter.mill && field(brew, 'mill') !== filter.mill) return false;
       const t = brew.config.unix_timestamp;

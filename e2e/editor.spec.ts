@@ -321,6 +321,44 @@ test('includes frozen beans with a Show frozen toggle and labels them', async ({
   await expect(icy).toBeHidden();
 });
 
+test('hides brews of archived and frozen beans until their switches are on', async ({ page }) => {
+  const data = backupData();
+  const brew = data.BREWS[0];
+  data.BEANS.push(
+    {
+      ...data.BEANS[0],
+      name: 'Icy Lot',
+      frozenDate: '2026-03-01T10:00:00.000Z',
+      config: { uuid: 'bean-icy', unix_timestamp: 1_700_200_000 },
+    },
+    {
+      ...data.BEANS[0],
+      name: 'Old Lot',
+      finished: true,
+      config: { uuid: 'bean-old', unix_timestamp: 1_700_300_000 },
+    },
+  );
+  data.BREWS.push(
+    { ...brew, bean: 'bean-icy', config: { uuid: 'brew-icy', unix_timestamp: 1_700_200_000 } },
+    { ...brew, bean: 'bean-old', config: { uuid: 'brew-old', unix_timestamp: 1_700_300_000 } },
+  );
+  await openBackup(page, data);
+  await page.getByRole('tab', { name: 'Brews 3' }).click();
+  const count = page.getByTestId('brews-count');
+  await expect(count).toHaveText('Showing 1 of 3');
+
+  const toggle = page.locator('button[aria-controls="brew-filters"]');
+  if (await toggle.isVisible()) await toggle.click();
+  await page.getByRole('button', { name: 'Show frozen' }).click();
+  await expect(count).toHaveText('Showing 2 of 3');
+  await page.getByRole('button', { name: 'Show archived' }).click();
+  await expect(count).toHaveText('Showing 3 of 3');
+  if (await toggle.isVisible()) await expect(toggle).toHaveText('Filters: 2');
+
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(count).toHaveText('Showing 1 of 3');
+});
+
 test('leads the bean table with roast date and buy date, and the brew table with brew date', async ({
   page,
 }) => {
