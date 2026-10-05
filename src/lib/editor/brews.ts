@@ -1,5 +1,5 @@
 import type { BackupData, BackupRecord } from '../formats/backup/backup';
-import { isFrozen } from './beans';
+import { localDay } from './beans';
 import { records } from './records';
 import { sortRecords, type Sort } from './sort';
 
@@ -126,11 +126,18 @@ export const emptyBrewFilter = (): BrewFilter => ({
   showFrozen: false,
 });
 
-/** Whether each bean is archived or in the freezer, by uuid, so brews can inherit it. */
+/**
+ * Whether each bean is archived or has been frozen, by uuid, so brews can inherit it. Frozen means a frozen date,
+ * even when it's thawed: a bean can't be brewed while it's in the freezer, so the app's thawed batches are the ones
+ * brews point at.
+ */
 export function beanStates(data: BackupData): Map<string, { archived: boolean; frozen: boolean }> {
   const states = new Map<string, { archived: boolean; frozen: boolean }>();
   for (const bean of records(data, 'BEANS')) {
-    states.set(bean.config.uuid, { archived: field(bean, 'finished') === true, frozen: isFrozen(bean) });
+    states.set(bean.config.uuid, {
+      archived: field(bean, 'finished') === true,
+      frozen: localDay(field(bean, 'frozenDate')) !== '',
+    });
   }
   return states;
 }
