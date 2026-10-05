@@ -649,3 +649,26 @@ test('keeps the search and filters of each section while moving between sections
   await page.getByRole('tab', { name: /^Grinders/ }).click();
   await expect(page.getByPlaceholder('Search grinders')).toHaveValue('mill');
 });
+
+test('marks archived grinders and methods with an icon badge only', async ({ page }) => {
+  const base = backupData();
+  const data = {
+    ...base,
+    MILL: [
+      ...(base.MILL as unknown[]),
+      { name: 'Old Grinder', finished: true, config: { uuid: 'mill-old', unix_timestamp: 1_700_000_000 } },
+    ],
+    PREPARATION: [
+      ...(base.PREPARATION as unknown[]),
+      { name: 'Old Method', finished: true, config: { uuid: 'prep-old', unix_timestamp: 1_700_000_000 } },
+    ],
+  };
+  await openBackup(page, data);
+  for (const tab of [/^Grinders/, /^Methods/]) {
+    await page.getByRole('tab', { name: tab }).click();
+    await page.getByRole('button', { name: 'Show archived' }).click();
+    await expect(page.getByRole('img', { name: 'Archived' })).toHaveCount(1);
+    // The badge carries no visible word.
+    await expect(page.getByText('Archived', { exact: true })).toHaveCount(0);
+  }
+});
