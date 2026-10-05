@@ -20,6 +20,8 @@ export interface BeanOrigin {
   harvest_time: string;
   certification: string;
   percentage: number | null;
+  purchasing_price: number | null;
+  fob_price: number | null;
 }
 
 export interface BeanForm {
@@ -84,6 +86,16 @@ export function isoFromLocalDay(day: string): string {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toISOString();
 }
 
+/**
+ * Local noon of a `YYYY-MM-DD` day as an ISO timestamp. A link's dates are read on the phone, which
+ * may be in another timezone than this browser; noon keeps the same calendar day up to 11 hours apart.
+ */
+export function isoFromLocalNoon(day: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!m) return '';
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).toISOString();
+}
+
 export const emptyOrigin = (): BeanOrigin => ({
   country: '',
   region: '',
@@ -95,6 +107,8 @@ export const emptyOrigin = (): BeanOrigin => ({
   harvest_time: '',
   certification: '',
   percentage: null,
+  purchasing_price: null,
+  fob_price: null,
 });
 
 export function beanForm(bean: BackupRecord): BeanForm {
@@ -129,6 +143,8 @@ export function beanForm(bean: BackupRecord): BeanForm {
     bean_information: origins.map((o) => ({
       ...Object.fromEntries(ORIGIN_TEXT.map((k) => [k, text(o[k])])),
       percentage: num(o['percentage']),
+      purchasing_price: num(o['purchasing_price']),
+      fob_price: num(o['fob_price']),
     })) as BeanOrigin[],
   };
 }
@@ -157,12 +173,12 @@ export function applyBeanForm(bean: BackupRecord, form: BeanForm): BackupRecord 
       ? (b['bean_information'] as Record<string, unknown>[])
       : [];
     out['bean_information'] = form.bean_information.map((origin, i) => ({
-      // New origins start from the app's defaults (IBeanInformation).
-      purchasing_price: 0,
-      fob_price: 0,
       ...old[i],
       ...origin,
+      // The app stores 0 for empty numbers (IBeanInformation).
       percentage: origin.percentage ?? 0,
+      purchasing_price: origin.purchasing_price ?? 0,
+      fob_price: origin.fob_price ?? 0,
     }));
   }
   return out as BackupRecord;
@@ -318,6 +334,8 @@ export function beanFormFromShared(shared: SharedBean): BeanForm {
     bean_information: (shared.bean_information ?? []).map((o) => ({
       ...Object.fromEntries(ORIGIN_TEXT.map((k) => [k, o[k] ?? ''])),
       percentage: o.percentage ?? null,
+      purchasing_price: o.purchasing_price ?? null,
+      fob_price: o.fob_price ?? null,
     })) as BeanOrigin[],
   };
 }
@@ -333,12 +351,14 @@ export function sharedFromBeanForm(form: BeanForm): SharedBean {
     .map((o) => ({
       ...Object.fromEntries(ORIGIN_TEXT.map((k) => [k, o[k].trim()]).filter(([, v]) => v)),
       ...(o.percentage ? { percentage: o.percentage } : {}),
+      ...(o.purchasing_price ? { purchasing_price: o.purchasing_price } : {}),
+      ...(o.fob_price ? { fob_price: o.fob_price } : {}),
     }))
     .filter((o) => Object.keys(o).length > 0);
   return {
     name: form.name.trim(),
     roaster: str(form.roaster),
-    roastingDate: isoFromLocalDay(form.roastingDate) || undefined,
+    roastingDate: isoFromLocalNoon(form.roastingDate) || undefined,
     bean_roasting_type: form.bean_roasting_type === 'UNKNOWN' ? undefined : form.bean_roasting_type,
     roast: form.roast === 'UNKNOWN' ? undefined : form.roast,
     roast_custom: form.roast === 'CUSTOM_ROAST' ? str(form.roast_custom) : undefined,
