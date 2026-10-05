@@ -11,6 +11,7 @@
   } from '../../editor/brews';
   import { nextSort, type Sort } from '../../editor/sort';
   import { searchClass, inputClass, labelClass } from './styles';
+  import ShowToggles from './ShowToggles.svelte';
   import SortButton from './SortButton.svelte';
   import ViewToggle from './ViewToggle.svelte';
   import VirtualList from './VirtualList.svelte';
@@ -27,15 +28,16 @@
     /** Kept by the editor, so they survive moving to another section. */
     filter: BrewFilter;
     names: ReadonlyMap<string, string>;
+    states: ReadonlyMap<string, { archived: boolean; frozen: boolean }>;
     beans: readonly Option[];
     methods: readonly Option[];
     mills: readonly Option[];
     onopen: (uuid: string) => void;
   }
 
-  let { brews, filter, names, beans, methods, mills, onopen }: Props = $props();
+  let { brews, filter, names, states, beans, methods, mills, onopen }: Props = $props();
   let sort = $state<Sort<BrewSortKey> | null>(null);
-  const shown = $derived(sortBrews(filterBrews(brews, names, filter), names, sort));
+  const shown = $derived(sortBrews(filterBrews(brews, names, filter, states), names, sort));
 
   // Two cards side by side once there's room, like the bean cards.
   const wide = matchMedia('(min-width: 40rem)');
@@ -62,7 +64,9 @@
   // On phones the filters would fill the screen, so they fold behind a button; wider screens always show them.
   let filtersOpen = $state(false);
   const activeFilters = $derived(
-    (['bean', 'method', 'mill', 'from', 'to'] as const).filter((key) => filter[key]).length,
+    (['bean', 'method', 'mill', 'from', 'to', 'showArchived', 'showFrozen'] as const).filter(
+      (key) => filter[key],
+    ).length,
   );
 
   const value = (brew: BackupRecord, key: string) => (brew as Record<string, unknown>)[key];
@@ -109,6 +113,10 @@
     </button>
   </div>
   <div id="brew-filters" class="{filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+    <!-- As tall as the date inputs, so the toggles line up with them on wide screens. -->
+    <div class="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-3 sm:h-[38px] sm:self-end">
+      <ShowToggles bind:showArchived={filter.showArchived} bind:showFrozen={filter.showFrozen} />
+    </div>
     <label class="{labelClass} sm:w-44">
       {m.brews_filter_from()}
       <input class={inputClass} type="date" bind:value={filter.from} />
