@@ -321,9 +321,7 @@ test('includes frozen beans with a Show frozen toggle and labels them', async ({
   await expect(icy).toBeHidden();
 });
 
-test('shows brews of frozen beans and hides those of archived beans, until the switches change', async ({
-  page,
-}) => {
+test('hides brews of archived and frozen beans until their switches are on', async ({ page }) => {
   const data = backupData();
   const brew = data.BREWS[0];
   data.BEANS.push(
@@ -347,8 +345,8 @@ test('shows brews of frozen beans and hides those of archived beans, until the s
   await openBackup(page, data);
   await page.getByRole('tab', { name: 'Brews 3' }).click();
   const count = page.getByTestId('brews-count');
-  // Frozen beans' brews show by default, archived ones don't.
-  await expect(count).toHaveText('Showing 2 of 3');
+  // Hidden by default, like the beans themselves.
+  await expect(count).toHaveText('Showing 1 of 3');
   await expect(page.getByRole('button', { name: 'Clear filters' })).toBeHidden();
 
   const toggle = page.locator('button[aria-controls="brew-filters"]');
@@ -359,15 +357,13 @@ test('shows brews of frozen beans and hides those of archived beans, until the s
   }
   const frozen = page.getByRole('button', { name: 'Show frozen' });
   const archived = page.getByRole('button', { name: 'Show archived' });
-  await expect(frozen).toHaveAttribute('aria-pressed', 'true');
+  await expect(frozen).toHaveAttribute('aria-pressed', 'false');
+  await expect(archived).toHaveAttribute('aria-pressed', 'false');
   await frozen.click();
-  await expect(count).toHaveText('Showing 1 of 3');
-  await archived.click();
   await expect(count).toHaveText('Showing 2 of 3');
-  if (phone) await expect(toggle).toHaveText('Filters: 2');
-  await frozen.click();
+  await archived.click();
   await expect(count).toHaveText('Showing 3 of 3');
-  if (phone) await expect(toggle).toHaveText('Filters: 1');
+  if (phone) await expect(toggle).toHaveText('Filters: 2');
 
   // Their beans' state shows as icon badges, in both layouts.
   for (const layout of ['Cards', 'Grid']) {
@@ -377,7 +373,7 @@ test('shows brews of frozen beans and hides those of archived beans, until the s
   }
 
   await page.getByRole('button', { name: 'Clear filters' }).click();
-  await expect(count).toHaveText('Showing 2 of 3');
+  await expect(count).toHaveText('Showing 1 of 3');
 });
 
 test('leads the bean table with roast date and buy date, and the brew table with brew date', async ({
