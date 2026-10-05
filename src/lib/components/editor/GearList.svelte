@@ -5,18 +5,19 @@
   import { filterGear, gearForm, type GearKey } from '../../editor/gear';
   import { searchClass } from './styles';
   import ShowToggles from './ShowToggles.svelte';
+  import type { GearFilter } from '../../editor/filters.svelte';
 
   interface Props {
     kind: GearKey;
     items: readonly BackupRecord[];
+    /** Kept by the editor, so they survive moving to another section. */
+    filter: GearFilter;
     brewCount: (uuid: string) => number;
     onopen: (uuid: string) => void;
   }
 
-  let { kind, items, brewCount, onopen }: Props = $props();
-  let query = $state('');
-  let showArchived = $state(false);
-  const shown = $derived(filterGear(items, query, showArchived));
+  let { kind, items, filter, brewCount, onopen }: Props = $props();
+  const shown = $derived(filterGear(items, filter.query, filter.showArchived));
 
   const text = $derived(
     kind === 'MILL'
@@ -33,9 +34,9 @@
         class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
         aria-hidden="true"
       />
-      <input type="search" placeholder={text.search} class={searchClass} bind:value={query} />
+      <input type="search" placeholder={text.search} class={searchClass} bind:value={filter.query} />
     </label>
-    <ShowToggles bind:showArchived />
+    <ShowToggles bind:showArchived={filter.showArchived} />
   </div>
 
   {#if shown.length === 0}

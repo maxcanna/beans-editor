@@ -134,6 +134,7 @@ test('filters beans by buy date', async ({ page }) => {
   await page.getByLabel('Buy date from').fill('2026-04-01');
   await expect(unused).toBeVisible();
   await expect(finca).toBeHidden();
+  await expect(page.getByTestId('beans-count')).toHaveText(/^Showing 1 of \d+$/);
   await page.getByLabel('Buy date to').fill('2026-04-05');
   await expect(unused).toBeHidden();
   await page.getByLabel('Buy date from').fill('2026-03-10');
@@ -577,4 +578,19 @@ test('guards grinders and methods that brews use, and offers no way to add a gri
     { name: 'V60 02', config: { uuid: 'prep-1', unix_timestamp: 1_700_000_000 } },
   ]);
   expect((json['MILL'] as { name: string }[]).map((g) => g.name)).toEqual(['Grinder']);
+});
+
+test('keeps the search and filters of each section while moving between sections', async ({ page }) => {
+  await openBackup(page, backupData());
+  await page.getByPlaceholder('Search beans').fill('Finca');
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  await page.getByPlaceholder('Search brews').fill('zzz');
+  await page.getByRole('tab', { name: /^Grinders/ }).click();
+  await page.getByPlaceholder('Search grinders').fill('mill');
+  await page.getByRole('tab', { name: /^Beans/ }).click();
+  await expect(page.getByPlaceholder('Search beans')).toHaveValue('Finca');
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  await expect(page.getByPlaceholder('Search brews')).toHaveValue('zzz');
+  await page.getByRole('tab', { name: /^Grinders/ }).click();
+  await expect(page.getByPlaceholder('Search grinders')).toHaveValue('mill');
 });
