@@ -190,7 +190,7 @@
       </section>
     {/if}
 
-    <p class="mt-auto pt-10 text-center text-xs text-muted">
+    <p class="mt-auto pt-5 text-center text-xs text-muted">
       {m.privacy_note()}
       <a
         href={SOURCE_URL}
