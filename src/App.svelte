@@ -24,23 +24,53 @@
   let openError = $state<string | null>(null);
   let notice = $state<'restored' | null>(null);
   let invalidDraft = $state<{ raw: unknown } | null>(null);
-  /** A backup waiting for the user to confirm it may replace unsaved work. */
-  let pending = $state<{ name: string; open: () => void } | null>(null);
+  /** Something waiting for the user to confirm it may throw away unsaved work. */
+  let pending = $state<{ title: string; body: string; confirm: string; run: () => void } | null>(null);
 
   async function open(file: IncomingFile) {
     openError = null;
     notice = null;
-    const { readBackup, BackupError } = await loadBackup();
+    let backup: Awaited<ReturnType<typeof loadBackup>> | undefined;
     try {
-      const data = readBackup(file.bytes);
+      backup = await loadBackup();
+      const data = backup.readBackup(file.bytes);
       const replace = () => session.open(file.name, data);
-      if (session.data && session.dirty) pending = { name: file.name, open: replace };
+      if (session.data && session.dirty)
+        pending = {
+          title: m.replace_title(),
+          body: m.replace_body({ file: file.name }),
+          confirm: m.replace_confirm(),
+          run: replace,
+        };
       else replace();
     } catch (error) {
-      if (error instanceof BackupError && error.notBackup) openError = m.not_a_backup();
+      if (backup && error instanceof backup.BackupError && error.notBackup) openError = m.not_a_backup();
       else
         openError = m.editor_error_open({ reason: error instanceof Error ? error.message : String(error) });
     }
+  }
+
+  /** Closing a backup with edits that were never downloaded asks first: it also clears the stored copy. */
+  function closeBackup() {
+    const close = () => {
+      notice = null;
+      void session.close();
+    };
+    if (session.dirty)
+      pending = { title: m.close_title(), body: m.close_body(), confirm: m.close_confirm(), run: close };
+    else close();
+  }
+
+  /** A file dropped anywhere on the page opens like one picked; without this the browser would navigate to it. */
+  const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
+  function onWindowDragOver(event: DragEvent) {
+    if (hasFiles(event)) event.preventDefault();
+  }
+  async function onWindowDrop(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    const file = event.dataTransfer?.files[0];
+    if (file) await open(await readLocalFile(file));
   }
 
   async function downloadInvalidDraft() {
@@ -57,6 +87,7 @@
 
   onMount(() => {
     void (async () => {
+      // Never throws: with storage blocked it comes back empty, so a shared file or link is still handled.
       const restored = await session.restore();
       if (restored.status === 'ok') notice = 'restored';
       if (restored.status === 'invalid') invalidDraft = { raw: restored.raw };
@@ -138,13 +169,7 @@
           aria-label={m.loading()}
         ></div>
       {:then { default: BackupEditor }}
-        <BackupEditor
-          {session}
-          onclose={() => {
-            notice = null;
-            void session.close();
-          }}
-        />
+        <BackupEditor {session} onclose={closeBackup} />
       {:catch}
         <p role="alert" class="rounded-2xl border border-danger/40 bg-danger/5 p-5 text-danger">
           {m.error_read()}
@@ -203,15 +228,17 @@
   </main>
 </div>
 
+<svelte:window ondragover={onWindowDragOver} ondrop={onWindowDrop} />
+
 <AlertDialog.Root open={pending !== null} onOpenChange={(open) => !open && (pending = null)}>
   <AlertDialog.Portal>
     <AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
     <AlertDialog.Content
       class="fixed top-1/2 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-xl"
     >
-      <AlertDialog.Title class="text-lg font-semibold">{m.replace_title()}</AlertDialog.Title>
+      <AlertDialog.Title class="text-lg font-semibold">{pending?.title ?? ''}</AlertDialog.Title>
       <AlertDialog.Description class="text-sm text-muted">
-        {m.replace_body({ file: pending?.name ?? '' })}
+        {pending?.body ?? ''}
       </AlertDialog.Description>
       <div class="flex justify-end gap-2">
         <AlertDialog.Cancel
@@ -222,11 +249,11 @@
         <AlertDialog.Action
           class="rounded-full bg-danger px-4 py-2 text-sm font-medium text-accent-fg hover:bg-danger/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           onclick={() => {
-            pending?.open();
+            pending?.run();
             pending = null;
           }}
         >
-          {m.replace_confirm()}
+          {pending?.confirm ?? ''}
         </AlertDialog.Action>
       </div>
     </AlertDialog.Content>

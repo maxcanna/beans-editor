@@ -103,6 +103,15 @@ describe('parsePrice', () => {
   });
 });
 
+describe('parsePrice words', () => {
+  it('only skips the words as whole words, so "Discover" and "freeze-dried" keep their price', () => {
+    expect(parsePrice('Discover our best: €18,50')).toBe(18.5);
+    expect(parsePrice('Freeze-dried lot €12')).toBe(12);
+    expect(parsePrice('Free shipping over €50')).toBeUndefined();
+    expect(parsePrice('Versand ab 50 €')).toBeUndefined();
+  });
+});
+
 describe('parseRoastingType', () => {
   it('maps brew words to the roast type', () => {
     expect(parseRoastingType('Filtro')).toBe('FILTER');
@@ -266,5 +275,20 @@ Roasted on 15 September 2026, shipped the next day.
       markdown: 'Title: Colombia Decaf – Shop\n',
     });
     expect(bean.decaffeinated).toBe(true);
+  });
+
+  it('does not take a word that merely ends in "deca" for decaf', () => {
+    const bean = extractBean(new URL('https://example.com/p/x'), {
+      markdown: 'Title: Arcadeca Natural – Shop\n',
+    });
+    expect(bean.decaffeinated).toBeUndefined();
+  });
+
+  it('reads only the first part of a huge page', () => {
+    const filler = 'lorem ipsum\n'.repeat(30_000);
+    const bean = extractBean(new URL('https://example.com/p/x'), {
+      markdown: `Markdown Content:\n${filler}\nCountry: Kenya\n`,
+    });
+    expect(bean.bean_information).toBeUndefined();
   });
 });

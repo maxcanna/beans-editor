@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
-  import type { BackupRecord } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import { applyBrewForm, brewForm, validateBrew, type BrewForm } from '../../editor/brews';
   import { ERROR_LABELS } from '../../editor/labels';
   import ConfirmDelete from './ConfirmDelete.svelte';
@@ -31,6 +31,8 @@
   let form = $state(brewForm(brew));
   let submitted = $state(false);
   let confirmingDelete = $state(false);
+  const initial = JSON.stringify(form);
+  const dirty = $derived(JSON.stringify(form) !== initial);
   let formRoot = $state<HTMLElement>();
   const errors = $derived(validateBrew(form, maxRating));
   const shown = $derived(submitted ? errors : {});
@@ -69,7 +71,15 @@
   ];
 </script>
 
-<SheetDialog title={m.brew_edit_title()} testid="brew-dialog" formId="brew-form" onsubmit={save} {onclose}>
+<SheetDialog
+  title={m.brew_edit_title()}
+  testid="brew-dialog"
+  formId="brew-form"
+  onsubmit={save}
+  {onclose}
+  {dirty}
+  busy={confirmingDelete}
+>
   <div bind:this={formRoot} class="grid gap-4 sm:grid-cols-2">
     <label class="{labelClass} sm:col-span-2">
       {m.brew_when()}
@@ -78,8 +88,11 @@
         type="datetime-local"
         bind:value={form.when}
         aria-invalid={shown.when ? 'true' : undefined}
+        aria-describedby={shown.when ? 'err-brew-when' : undefined}
       />
-      {#if shown.when}<span class="text-xs font-normal text-danger">{ERROR_LABELS[shown.when]()}</span>{/if}
+      {#if shown.when}<span id="err-brew-when" class="text-xs font-normal text-danger"
+          >{ERROR_LABELS[shown.when]()}</span
+        >{/if}
     </label>
     {#each SELECTS as select (select.key)}
       {@const options = select.options()}
@@ -113,9 +126,12 @@
           inputmode="decimal"
           bind:value={form[field.key]}
           aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? `err-brew-${field.key}` : undefined}
         />
         {#if error}
-          <span class="text-xs font-normal text-danger">{ERROR_LABELS[error]()}</span>
+          <span id="err-brew-{field.key}" class="text-xs font-normal text-danger"
+            >{ERROR_LABELS[error]()}</span
+          >
         {/if}
       </label>
     {/each}

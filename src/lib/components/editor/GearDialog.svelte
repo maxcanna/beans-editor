@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Archive, ArchiveRestore, Trash2 } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
-  import type { BackupRecord } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import { applyGearForm, gearForm, type GearKey } from '../../editor/gear';
   import { ERROR_LABELS } from '../../editor/labels';
   import ConfirmDelete from './ConfirmDelete.svelte';
@@ -24,13 +24,19 @@
   let form = $state(gearForm(record));
   let submitted = $state(false);
   let confirmingDelete = $state(false);
+  const initial = JSON.stringify(form);
+  const dirty = $derived(JSON.stringify(form) !== initial);
   const nameError = $derived(submitted && form.name.trim() === '' ? ERROR_LABELS.required() : undefined);
 
+  let nameInput = $state<HTMLInputElement>();
   const title = $derived(kind === 'PREPARATION' ? m.gear_edit_method() : m.gear_edit_grinder());
 
   function save() {
     submitted = true;
-    if (form.name.trim() === '') return;
+    if (form.name.trim() === '') {
+      queueMicrotask(() => nameInput?.focus());
+      return;
+    }
     onsave(applyGearForm(record, $state.snapshot(form)));
   }
 
@@ -40,10 +46,19 @@
   }
 </script>
 
-<SheetDialog {title} testid="gear-dialog" formId="gear-form" onsubmit={save} {onclose}>
+<SheetDialog
+  {title}
+  testid="gear-dialog"
+  formId="gear-form"
+  onsubmit={save}
+  {onclose}
+  {dirty}
+  busy={confirmingDelete}
+>
   <label class={labelClass}>
     {m.gear_name()}
     <input
+      bind:this={nameInput}
       class={inputClass}
       bind:value={form.name}
       required

@@ -1,6 +1,13 @@
 import protobuf from 'protobufjs';
 import { describe, expect, it } from 'vitest';
-import { beanLink, encodeBean, findSharedUrl, nameFromUrl, type SharedBean } from './bean-link';
+import {
+  beanLink,
+  encodeBean,
+  findSharedUrl,
+  looksComplete,
+  nameFromUrl,
+  type SharedBean,
+} from './bean-link';
 
 // The fields of Beanconqueror's BeanProto that links carry, with the app's field numbers.
 const root = protobuf.Root.fromJSON({
@@ -139,5 +146,24 @@ describe('bean links', () => {
       'https://shop.example/guji',
     );
     expect(findSharedUrl('no link here', undefined)).toBeUndefined();
+  });
+});
+
+describe('looksComplete', () => {
+  it('rejects a link that is still being typed', () => {
+    for (const typed of [
+      'https://e',
+      'https://exam',
+      'https://example',
+      'https://example.com',
+      'https://example.c',
+    ]) {
+      expect(looksComplete(new URL(typed))).toBe(false);
+    }
+  });
+
+  it('accepts a host with a path', () => {
+    expect(looksComplete(new URL('https://roaster.example/products/guji'))).toBe(true);
+    expect(looksComplete(new URL('https://www.roaster.co.uk/coffee/x'))).toBe(true);
   });
 });

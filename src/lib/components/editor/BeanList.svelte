@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Link, Plus, Search, SlidersHorizontal } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
-  import type { BackupRecord } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import { filterBeans, isFrozen, localDay, sortBeans, type BeanSortKey } from '../../editor/beans';
   import { label, ROAST_LABELS, ROASTING_TYPE_LABELS } from '../../editor/labels';
   import { nextSort, type Sort } from '../../editor/sort';
@@ -9,6 +9,8 @@
   import MetaList from './MetaList.svelte';
   import SortButton from './SortButton.svelte';
   import ViewToggle from './ViewToggle.svelte';
+  import { rem } from './rem.svelte';
+  import VirtualTable from './VirtualTable.svelte';
   import ShowToggles from './ShowToggles.svelte';
   import StateBadges from './StateBadges.svelte';
   import { layout } from './view.svelte';
@@ -47,6 +49,16 @@
       roastTo: '',
     });
   };
+
+  const COLUMNS: { key: BeanSortKey; label: () => string; width: string; end?: boolean }[] = [
+    { key: 'roastingDate', label: m.bean_roast_date, width: '8rem' },
+    { key: 'buyDate', label: m.bean_buy_date, width: '8rem' },
+    { key: 'name', label: m.bean_name, width: '' },
+    { key: 'roaster', label: m.bean_roaster, width: '10rem' },
+    { key: 'bean_roasting_type', label: m.bean_roasting_type, width: '8rem' },
+    { key: 'weight', label: m.bean_weight, width: '6rem', end: true },
+    { key: 'rating', label: m.bean_rating_short, width: '6rem', end: true },
+  ];
 
   const sortOf = (key: BeanSortKey) => (sort?.key === key ? sort.direction : null);
   const ariaSort = (key: BeanSortKey) =>
@@ -168,7 +180,8 @@
   {:else if layout.view === 'cards'}
     <ul class="grid gap-3 sm:grid-cols-2" data-testid="bean-cards">
       {#each shown as bean (bean.config.uuid)}
-        <li>
+        <!-- Off-screen cards skip layout and paint, which keeps a long list cheap without fixing the cards' height. -->
+        <li class="[contain-intrinsic-size:auto_7rem] [content-visibility:auto]">
           <button
             type="button"
             class="flex h-full w-full flex-col gap-1 rounded-2xl border border-border bg-surface p-4 text-left shadow-sm hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-accent"
@@ -193,88 +206,66 @@
       {/each}
     </ul>
   {:else}
-    <div class="overflow-x-auto rounded-2xl border border-border bg-surface">
-      <table class="w-full text-left text-sm" data-testid="bean-grid">
-        <thead class="border-b border-border text-xs whitespace-nowrap text-muted">
-          <tr>
-            <th scope="col" aria-sort={ariaSort('roastingDate')} class="px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_roast_date()}
-                direction={sortOf('roastingDate')}
-                onclick={() => (sort = nextSort(sort, 'roastingDate'))}
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('buyDate')} class="px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_buy_date()}
-                direction={sortOf('buyDate')}
-                onclick={() => (sort = nextSort(sort, 'buyDate'))}
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('name')} class="min-w-44 px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_name()}
-                direction={sortOf('name')}
-                onclick={() => (sort = nextSort(sort, 'name'))}
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('roaster')} class="min-w-36 px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_roaster()}
-                direction={sortOf('roaster')}
-                onclick={() => (sort = nextSort(sort, 'roaster'))}
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('bean_roasting_type')} class="px-4 py-3 font-medium">
-              <SortButton
-                label={m.bean_roasting_type()}
-                direction={sortOf('bean_roasting_type')}
-                onclick={() => (sort = nextSort(sort, 'bean_roasting_type'))}
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('weight')} class="px-4 py-3 text-right font-medium">
-              <SortButton
-                label={m.bean_weight()}
-                direction={sortOf('weight')}
-                onclick={() => (sort = nextSort(sort, 'weight'))}
-                end
-              />
-            </th>
-            <th scope="col" aria-sort={ariaSort('rating')} class="px-4 py-3 text-right font-medium">
-              <SortButton
-                label={m.bean_rating_short()}
-                direction={sortOf('rating')}
-                onclick={() => (sort = nextSort(sort, 'rating'))}
-                end
-              />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each shown as bean (bean.config.uuid)}
-            <tr class="border-b border-border last:border-0 hover:bg-border/20">
-              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'roastingDate')}</td>
-              <td class="px-4 py-2 whitespace-nowrap">{day(bean, 'buyDate')}</td>
-              <th scope="row" class="px-4 py-2 font-medium">
-                <button
-                  type="button"
-                  class="text-left hover:underline focus-visible:outline-2 focus-visible:outline-accent"
-                  onclick={() => onopen(bean.config.uuid)}
+    <div data-testid="bean-grid">
+      <VirtualTable
+        items={shown}
+        rowHeight={rem.px * 3}
+        columns={COLUMNS.length}
+        minWidth={58}
+        key={(b) => b.config.uuid}
+        label={m.beans_title()}
+      >
+        {#snippet head()}
+          <colgroup>
+            {#each COLUMNS as c (c.key)}
+              <col style:width={c.width || undefined} />
+            {/each}
+          </colgroup>
+          <thead class="text-xs whitespace-nowrap text-muted">
+            <tr>
+              {#each COLUMNS as c (c.key)}
+                <th
+                  scope="col"
+                  aria-sort={ariaSort(c.key)}
+                  class={[
+                    'sticky top-0 z-10 border-b border-border bg-surface px-4 py-3 font-medium',
+                    c.end && 'text-right',
+                  ]}
                 >
-                  {text(bean, 'name')}
-                </button>
-                <StateBadges class="ml-2 align-middle" archived={archived(bean)} frozen={isFrozen(bean)} />
-              </th>
-              <td class="px-4 py-2">{text(bean, 'roaster')}</td>
-              <td class="px-4 py-2 whitespace-nowrap"
-                >{label(ROASTING_TYPE_LABELS, (bean as Record<string, unknown>)['bean_roasting_type'])}</td
-              >
-              <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'weight') ?? ''}</td>
-              <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'rating') ?? ''}</td>
+                  <SortButton
+                    label={c.label()}
+                    direction={sortOf(c.key)}
+                    end={c.end}
+                    onclick={() => (sort = nextSort(sort, c.key))}
+                  />
+                </th>
+              {/each}
             </tr>
-          {/each}
-        </tbody>
-      </table>
+          </thead>
+        {/snippet}
+        {#snippet cells(bean)}
+          <td class="truncate px-4 py-2">{day(bean, 'roastingDate')}</td>
+          <td class="truncate px-4 py-2">{day(bean, 'buyDate')}</td>
+          <th scope="row" class="px-4 py-2 font-medium">
+            <span class="flex items-center gap-2">
+              <button
+                type="button"
+                class="min-w-0 truncate text-left hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+                onclick={() => onopen(bean.config.uuid)}
+              >
+                {text(bean, 'name')}
+              </button>
+              <StateBadges archived={archived(bean)} frozen={isFrozen(bean)} />
+            </span>
+          </th>
+          <td class="truncate px-4 py-2">{text(bean, 'roaster')}</td>
+          <td class="truncate px-4 py-2"
+            >{label(ROASTING_TYPE_LABELS, (bean as Record<string, unknown>)['bean_roasting_type'])}</td
+          >
+          <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'weight') ?? ''}</td>
+          <td class="px-4 py-2 text-right tabular-nums">{number(bean, 'rating') ?? ''}</td>
+        {/snippet}
+      </VirtualTable>
     </div>
   {/if}
 </section>

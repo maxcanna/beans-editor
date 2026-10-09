@@ -1,4 +1,4 @@
-import type { BackupRecord } from '../formats/backup/backup';
+import type { BackupRecord } from '../formats/backup/schema';
 
 /** Grinders (MILL) and methods (PREPARATION) share the fields the editor shows. */
 export type GearKey = 'MILL' | 'PREPARATION';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Search } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
-  import type { BackupRecord } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import { filterGear, gearForm, type GearKey } from '../../editor/gear';
   import { searchClass } from './styles';
   import ShowToggles from './ShowToggles.svelte';

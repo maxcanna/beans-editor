@@ -47,6 +47,13 @@
   {#if message}<span {id} class="text-xs font-normal text-danger">{message}</span>{/if}
 {/snippet}
 
+<!-- A link carries whole numbers only (BeanProto's uint fields), so say so rather than round without a word. -->
+{#snippet rounded(value: number | null)}
+  {#if mode === 'share' && value !== null && value > 0 && !Number.isInteger(value)}
+    <span class="text-xs font-normal text-muted">{m.link_rounded({ value: Math.round(value) })}</span>
+  {/if}
+{/snippet}
+
 <div class="grid gap-4 sm:grid-cols-2">
   <label class="{labelClass} sm:col-span-2">
     {m.bean_name()}
@@ -106,6 +113,7 @@
       aria-describedby={errors.weight ? 'err-weight' : undefined}
     />
     {@render error(errors.weight && ERROR_LABELS[errors.weight](), 'err-weight')}
+    {@render rounded(form.weight)}
   </label>
   <label class={labelClass}>
     {m.bean_cost()}
@@ -120,6 +128,7 @@
       aria-describedby={errors.cost ? 'err-cost' : undefined}
     />
     {@render error(errors.cost && ERROR_LABELS[errors.cost](), 'err-cost')}
+    {@render rounded(form.cost)}
   </label>
   {#if mode === 'backup'}
     <label class={labelClass}>

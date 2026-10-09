@@ -672,3 +672,89 @@ test('marks archived grinders and methods with an icon badge only', async ({ pag
     await expect(page.getByText('Archived', { exact: true })).toHaveCount(0);
   }
 });
+
+test('asks before closing a backup that has unsaved edits', async ({ page }) => {
+  await openBackup(page);
+  // Nothing edited: closing needs no question.
+  await page.getByRole('button', { name: 'Close backup' }).click();
+  await expect(page.getByTestId('backup-editor')).toHaveCount(0);
+
+  await openBackup(page);
+  await renameUnusedLot(page, 'Renamed Lot');
+  await page.getByRole('button', { name: 'Close backup' }).click();
+  const alert = page.getByRole('alertdialog');
+  await expect(alert).toContainText('Close without downloading?');
+  await alert.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(page.getByRole('button', { name: /Renamed Lot/ })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Close backup' }).click();
+  await alert.getByRole('button', { name: 'Close backup' }).click();
+  await expect(page.getByTestId('backup-editor')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId('backup-editor')).toHaveCount(0);
+});
+
+test('asks before Escape or a tap outside throws away what was typed in a dialog', async ({ page }) => {
+  await openBackup(page);
+  const dialog = page.getByTestId('bean-dialog');
+  await page.getByRole('button', { name: /Unused Lot/ }).click();
+  // Untouched: Escape just closes it.
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole('button', { name: /Unused Lot/ }).click();
+  await dialog.getByLabel('Name').fill('Typed but not saved');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('confirm-discard')).toBeVisible();
+  await page.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(dialog.getByLabel('Name')).toHaveValue('Typed but not saved');
+
+  await page.mouse.click(4, 4);
+  await expect(page.getByTestId('confirm-discard')).toBeVisible();
+  await page.getByRole('button', { name: 'Discard changes' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: /Unused Lot/ })).toBeVisible();
+});
+
+test('the brew dialog asks before discarding too, and links its errors to the fields', async ({ page }) => {
+  await openBackup(page);
+  await page.getByRole('tab', { name: /Brews/ }).click();
+  await page
+    .getByRole('button', { name: /Nov|Oct|Dec/ })
+    .first()
+    .click();
+  const dialog = page.getByTestId('brew-dialog');
+  await dialog.getByLabel('Dose (g)').fill('-3');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  const dose = dialog.getByLabel('Dose (g)');
+  await expect(dose).toHaveAttribute('aria-invalid', 'true');
+  const described = await dose.getAttribute('aria-describedby');
+  await expect(page.locator(`#${described}`)).toContainText("Can't be negative");
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('confirm-discard')).toBeVisible();
+});
+
+test('opens a backup dropped anywhere on the page instead of leaving the app', async ({ page }) => {
+  await openBackup(page);
+  const other = {
+    ...backupData(),
+    BEANS: [{ name: 'Dropped Bean', config: { uuid: 'd1', unix_timestamp: 1 } }],
+  };
+  const bytes = [...backupZip(other)];
+  const drop = () =>
+    page.evaluate((b) => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([new Uint8Array(b)], 'dropped.zip', { type: 'application/zip' }));
+      document.body.dispatchEvent(
+        new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }),
+      );
+    }, bytes);
+
+  // With edits waiting it asks first, like opening a file does.
+  await renameUnusedLot(page, 'Renamed Lot');
+  await drop();
+  await expect(page.getByRole('alertdialog')).toContainText('Replace the open backup?');
+  await page.getByRole('button', { name: 'Replace' }).click();
+  await expect(page.getByRole('button', { name: /Dropped Bean/ })).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+});

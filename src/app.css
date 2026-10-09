@@ -45,5 +45,8 @@
   }
   body {
     @apply bg-bg font-sans text-pretty text-fg antialiased;
+    /* viewport-fit=cover lets the page run under notches and home bars; keep the content clear of them. */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
   }
 }

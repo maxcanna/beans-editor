@@ -2,10 +2,11 @@
   import { Archive, ArchiveRestore, Trash2, X } from '@lucide/svelte';
   import { Dialog } from 'bits-ui';
   import { m } from '$paraglide/messages';
-  import type { BackupRecord } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import { applyBeanForm, beanForm, validateBean } from '../../editor/beans';
   import BeanFields from './BeanFields.svelte';
   import ConfirmDelete from './ConfirmDelete.svelte';
+  import ConfirmDiscard from './ConfirmDiscard.svelte';
   import { buttonClass as button } from './styles';
 
   interface Props {
@@ -26,6 +27,10 @@
   let form = $state(beanForm(bean));
   let submitted = $state(false);
   let confirmingDelete = $state(false);
+  let confirmingDiscard = $state(false);
+  // svelte-ignore state_referenced_locally
+  const initial = JSON.stringify(form);
+  const dirty = $derived(JSON.stringify(form) !== initial);
   const errors = $derived(validateBean(form, maxRating));
   const shown = $derived(submitted ? errors : {});
 
@@ -41,6 +46,13 @@
     onsave(applyBeanForm(bean, $state.snapshot(form)));
   }
 
+  /** Escape or a tap outside would drop the edits: ask first. The Cancel buttons are the user's own choice. */
+  function guardClose(event: Event) {
+    if (!dirty || confirmingDelete || confirmingDiscard) return;
+    event.preventDefault();
+    confirmingDiscard = true;
+  }
+
   /** Archiving saves the form too, so edits made before it aren't lost. */
   function toggleArchived() {
     form.finished = !form.finished;
@@ -54,8 +66,10 @@
     <Dialog.Content
       class="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl border border-border bg-surface shadow-xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[88dvh] sm:w-[min(40rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
       data-testid="bean-dialog"
+      onEscapeKeydown={guardClose}
+      onInteractOutside={guardClose}
     >
-      <header class="flex items-center gap-3 border-b border-border px-5 py-4">
+      <div class="flex items-center gap-3 border-b border-border px-5 py-4">
         <Dialog.Title class="flex-1 text-lg font-semibold">
           {isNew ? m.bean_new_title() : m.bean_edit_title()}
         </Dialog.Title>
@@ -65,7 +79,7 @@
         >
           <X class="size-5" aria-hidden="true" />
         </Dialog.Close>
-      </header>
+      </div>
 
       <form
         bind:this={formElement}
@@ -106,6 +120,10 @@
           {m.bean_save()}
         </button>
       </footer>
+
+      {#if confirmingDiscard}
+        <ConfirmDiscard ondiscard={onclose} oncancel={() => (confirmingDiscard = false)} />
+      {/if}
 
       {#if confirmingDelete}
         <ConfirmDelete

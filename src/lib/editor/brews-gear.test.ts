@@ -82,6 +82,24 @@ describe('brews', () => {
     expect(ids({ from: day, to: day })).toEqual(['r2']);
   });
 
+  it('ends the "to" day at the next local midnight, also on a day with a clock change', () => {
+    const zone = process.env['TZ'];
+    process.env['TZ'] = 'Europe/Rome'; // 2026-03-29 has 23 hours there
+    try {
+      const at = (y: number, m: number, d: number, h: number, min = 0) =>
+        Math.floor(new Date(y, m - 1, d, h, min).getTime() / 1000);
+      const brews = [
+        { config: { uuid: 'late', unix_timestamp: at(2026, 3, 29, 23, 30) } },
+        { config: { uuid: 'next', unix_timestamp: at(2026, 3, 30, 0, 30) } },
+      ] satisfies BackupRecord[];
+      const to = { ...emptyBrewFilter(), to: '2026-03-29' };
+      expect(filterBrews(brews, new Map(), to).map((b) => b.config.uuid)).toEqual(['late']);
+    } finally {
+      if (zone === undefined) delete process.env['TZ'];
+      else process.env['TZ'] = zone;
+    }
+  });
+
   it('hides brews of archived or frozen beans until asked, unless their bean is picked', () => {
     const withStates: BackupData = {
       ...data,
