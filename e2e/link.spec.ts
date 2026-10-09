@@ -286,3 +286,54 @@ test('offers to fill in a shared link by hand when the page can’t be read', as
   await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
   await expect(dialog.getByTestId('open-in-beanconqueror')).toHaveAttribute('href', /^beanconqueror:/);
 });
+
+test('opens a shared link even when the browser blocks IndexedDB', async ({ page }) => {
+  await mockJina(page);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'indexedDB', {
+      get() {
+        throw new DOMException('denied', 'SecurityError');
+      },
+    });
+  });
+  await page.goto(`/?shared-link=${encodeURIComponent(PRODUCT)}`);
+  const dialog = page.getByTestId('add-from-link');
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test('does not send half a typed address to the reader', async ({ page }) => {
+  const asked: string[] = [];
+  await page.route('https://r.jina.ai/**', (route) => {
+    asked.push(route.request().url());
+    return route.fulfill({ status: 200, body: PAGE, headers: { 'access-control-allow-origin': '*' } });
+  });
+  const dialog = await openFromEditor(page);
+  const input = dialog.getByLabel('Product page URL');
+  await input.pressSequentially('https://roaster.exam');
+  await page.waitForTimeout(1500);
+  expect(asked).toEqual([]);
+  await input.pressSequentially('ple/en/shop/colombia-motta/');
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  expect(asked).toEqual([`https://r.jina.ai/${PRODUCT}`]);
+});
+
+test('asks before closing the review form with edits, and not without', async ({ page }) => {
+  await mockJina(page);
+  const dialog = await openFromEditor(page);
+  await dialog.getByLabel('Product page URL').fill(PRODUCT);
+  await expect(dialog.getByLabel('Name')).toHaveValue('Colombia Motta');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole('button', { name: 'Add bean from URL' }).click();
+  await dialog.getByLabel('Product page URL').fill(PRODUCT);
+  await dialog.getByLabel('Name').fill('Edited by hand');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('confirm-discard')).toBeVisible();
+  await page.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(dialog.getByLabel('Name')).toHaveValue('Edited by hand');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Discard changes' }).click();
+  await expect(dialog).toBeHidden();
+});

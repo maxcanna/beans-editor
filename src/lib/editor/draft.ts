@@ -1,7 +1,6 @@
 import { createStore, del, get, set } from 'idb-keyval';
 import * as v from 'valibot';
-import { COLLECTIONS } from '../formats/backup/backup';
-import type { BackupData } from '../formats/backup/backup';
+import { COLLECTIONS, RecordSchema, type BackupData } from '../formats/backup/schema';
 
 /**
  * The open backup, kept in IndexedDB so a reload or a closed tab doesn't lose
@@ -10,10 +9,6 @@ import type { BackupData } from '../formats/backup/backup';
  * dropped silently.
  */
 export const DRAFT_VERSION = 1;
-
-const RecordSchema = v.looseObject({
-  config: v.looseObject({ uuid: v.string(), unix_timestamp: v.number() }),
-});
 
 const DraftSchema = v.object({
   version: v.literal(DRAFT_VERSION),

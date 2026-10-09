@@ -2,7 +2,8 @@
   import { Download, FileArchive, X } from '@lucide/svelte';
   import { Tabs } from 'bits-ui';
   import { m } from '$paraglide/messages';
-  import { writeBackup, type BackupRecord } from '../../formats/backup/backup';
+  import { writeBackup } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import { newBean } from '../../editor/beans';
   import { beanStates, nameIndex } from '../../editor/brews';
   import { download, outputName } from '../../editor/output';
@@ -33,19 +34,15 @@
 
   const data = $derived(session.data ?? {});
   const beans = $derived(records(data, 'BEANS'));
-  const maxRating = $derived.by(() => {
+  /** A rating scale from SETTINGS (`bean_rating`, `brew_rating`), 5 when the backup doesn't say. */
+  const ratingScale = (key: 'bean_rating' | 'brew_rating') => {
     const settings = data['SETTINGS'];
     const first = Array.isArray(settings) ? settings[0] : settings;
-    const value = (first as Record<string, unknown> | undefined)?.['bean_rating'];
+    const value = (first as Record<string, unknown> | undefined)?.[key];
     return typeof value === 'number' && value > 0 ? value : 5;
-  });
-
-  const brewMaxRating = $derived.by(() => {
-    const settings = data['SETTINGS'];
-    const first = Array.isArray(settings) ? settings[0] : settings;
-    const value = (first as Record<string, unknown> | undefined)?.['brew_rating'];
-    return typeof value === 'number' && value > 0 ? value : 5;
-  });
+  };
+  const maxRating = $derived(ratingScale('bean_rating'));
+  const brewMaxRating = $derived(ratingScale('brew_rating'));
 
   type Editable = 'BEANS' | 'BREWS' | 'MILL' | 'PREPARATION';
   /** The record in the dialog: an existing one, or a new unsaved one. */
@@ -55,6 +52,20 @@
   const filters = createFilters();
   let addingFromLink = $state(false);
   const loadAddFromLink = () => import('../AddFromLink.svelte');
+
+  // The tab strip scrolls sideways on a phone: fade its end while there is more to reach.
+  let tabList = $state<HTMLElement | null>(null);
+  let moreTabs = $state(false);
+  const measureTabs = () => {
+    if (tabList) moreTabs = tabList.scrollLeft + tabList.clientWidth < tabList.scrollWidth - 1;
+  };
+  $effect(() => {
+    if (!tabList) return;
+    measureTabs();
+    const observer = new ResizeObserver(measureTabs);
+    observer.observe(tabList);
+    return () => observer.disconnect();
+  });
 
   const options = (key: 'BEANS' | 'MILL' | 'PREPARATION') =>
     records(data, key)
@@ -142,8 +153,13 @@
 
   <Tabs.Root bind:value={tab} class="flex flex-col gap-6">
     <Tabs.List
+      bind:ref={tabList}
+      onscroll={measureTabs}
       aria-label={m.tabs_label()}
-      class="flex gap-1 overflow-x-auto rounded-full border border-border bg-surface p-1 text-sm"
+      class={[
+        'flex gap-1 overflow-x-auto rounded-full border border-border bg-surface p-1 text-sm',
+        moreTabs && '[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]',
+      ]}
     >
       {#each TABS as t (t.key)}
         <Tabs.Trigger

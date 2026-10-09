@@ -380,9 +380,15 @@ export function parseWeight(text: string | undefined): number | undefined {
 
 const PRICE =
   /(?:[€$£]|EUR|USD|GBP|CHF|RON|lei|kr)\s?(\d{1,4}(?:[.,]\d{1,2})?)|(\d{1,4}(?:[.,]\d{1,2})?)\s?(?:[€$£]|EUR|USD|GBP|CHF|RON|lei|kr)(?![a-z])/i;
-/** Lines whose amounts aren't the product's price. */
-const NOT_A_PRICE =
-  /shipping|spedizion|versand|livraison|envío|envio|gratis|free|over|oltre|ab |dès|desde|save|risparmi|coupon|sconto|discount|compare|was /i;
+/**
+ * Lines whose amounts aren't the product's price. Short words match whole words only ("over" must not
+ * catch "Discover", "free" must not catch "freeze-dried"); the others are prefixes ("spedizione", "saved").
+ */
+const NOT_A_PRICE = new RegExp(
+  String.raw`(?<!\p{L})(?:shipping|spedizion|versand|livraison|env[ií]o|gratis|risparmi|coupon|sconto|discount|compare|save)` +
+    String.raw`|(?<!\p{L})(?:free|over|oltre|ab|dès|desde|was)(?!\p{L})`,
+  'iu',
+);
 
 /** A price from a text like "€ 18,00", "18.00 EUR", "£12". */
 export function parsePrice(text: string | undefined): number | undefined {
@@ -406,7 +412,7 @@ export function parseRoastingType(text: string | undefined): RoastingType | unde
   return undefined;
 }
 
-const DECAF = /\bdecaf|decaffeinat|entkoffeiniert|descafeinado|décaféiné|deca\b/i;
+const DECAF = /\bdecaf|decaffeinat|entkoffeiniert|descafeinado|décaféiné|\bdeca\b/i;
 
 function htmlToText(html: string): string {
   return html
@@ -498,6 +504,9 @@ function firstPrice(markdown: string): number | undefined {
   return undefined;
 }
 
+/** The most text of a page or description the extractor reads. */
+const MAX_TEXT = 200_000;
+
 /**
  * Builds the bean from what was read. Each source only fills fields the ones before it left
  * empty: Shopify JSON, then its description, then labelled lines on the page, then guesses
@@ -507,12 +516,13 @@ export function extractBean(url: URL, page: { markdown?: string; shopify?: Shopi
   const bean: Partial<SharedBean> = {};
   const origin: SharedOrigin = {};
   const markdown = page.markdown ?? '';
-  const body = markdown.split(/^Markdown Content:\s*$/m).at(-1) ?? markdown;
+  // A shop page is a few tens of KB of text; anything much longer is junk that would only block the page.
+  const body = (markdown.split(/^Markdown Content:\s*$/m).at(-1) ?? markdown).slice(0, MAX_TEXT);
 
   if (page.shopify) {
     const shop = fromShopify(page.shopify, url);
     fill(bean, shop.bean);
-    const prose = fromText(shop.prose);
+    const prose = fromText(shop.prose.slice(0, MAX_TEXT));
     fill(bean, prose.bean);
     fill(origin, prose.origin);
   }

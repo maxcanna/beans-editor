@@ -1,4 +1,4 @@
-import type { BackupData, BackupRecord } from '../formats/backup/backup';
+import type { BackupData, BackupRecord } from '../formats/backup/schema';
 import { localDay } from './beans';
 import { records } from './records';
 import { sortRecords, type Sort } from './sort';
@@ -157,6 +157,15 @@ export function nameIndex(data: BackupData): Map<string, string> {
   return names;
 }
 
+/** Local midnight after a `YYYY-MM-DD` day, in seconds. Not "+ 24 h": a day with a clock change isn't 24 hours. */
+function startOfNextDay(day: string): number {
+  const [y = 0, m = 1, d = 1] = day.split('-').map(Number);
+  const next = new Date(0);
+  next.setFullYear(y, m - 1, d + 1);
+  next.setHours(0, 0, 0, 0);
+  return next.getTime() / 1000;
+}
+
 /** Brews matching the filter, newest first like the app. */
 export function filterBrews(
   brews: readonly BackupRecord[],
@@ -166,7 +175,7 @@ export function filterBrews(
 ): BackupRecord[] {
   const words = filter.query.toLowerCase().split(/\s+/).filter(Boolean);
   const start = filter.from ? new Date(`${filter.from}T00:00`).getTime() / 1000 : -Infinity;
-  const end = filter.to ? new Date(`${filter.to}T00:00`).getTime() / 1000 + 86_400 : Infinity;
+  const end = filter.to ? startOfNextDay(filter.to) : Infinity;
   return brews
     .filter((brew) => {
       if (filter.bean && field(brew, 'bean') !== filter.bean) return false;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Search, SlidersHorizontal, Star } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
-  import type { BackupRecord } from '../../formats/backup/backup';
+  import type { BackupRecord } from '../../formats/backup/schema';
   import {
     emptyBrewFilter,
     filterBrews,
@@ -17,6 +17,7 @@
   import ViewToggle from './ViewToggle.svelte';
   import VirtualList from './VirtualList.svelte';
   import VirtualTable from './VirtualTable.svelte';
+  import { rem } from './rem.svelte';
   import { layout } from './view.svelte';
 
   interface Option {
@@ -169,7 +170,7 @@
     <div data-testid="brew-cards">
       <VirtualList
         items={shown}
-        rowHeight={116}
+        rowHeight={rem.px * 7.25}
         {columns}
         plain
         key={(b) => b.config.uuid}
@@ -209,7 +210,7 @@
     <div data-testid="brew-table">
       <VirtualTable
         items={shown}
-        rowHeight={48}
+        rowHeight={rem.px * 3}
         columns={COLUMNS.length}
         minWidth={58}
         key={(b) => b.config.uuid}
