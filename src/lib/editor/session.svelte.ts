@@ -1,4 +1,4 @@
-import type { BackupData } from '../formats/backup/backup';
+import type { BackupData } from '../formats/backup/schema';
 import { clearDraft, idbDraftStore, loadDraft, saveDraft, type DraftStore, type LoadedDraft } from './draft';
 
 /**
@@ -23,9 +23,19 @@ export class EditorSession {
     this.#store = store;
   }
 
-  /** Brings back the draft from the last visit, if any. */
+  /**
+   * Brings back the draft from the last visit, if any. Storage that can't be read (blocked, private mode) is
+   * reported through `storageFailed` and counts as no draft, so the rest of start-up carries on.
+   */
   async restore(): Promise<LoadedDraft> {
-    const loaded = await loadDraft(this.#store);
+    let loaded: LoadedDraft;
+    try {
+      loaded = await loadDraft(this.#store);
+    } catch (error) {
+      this.storageFailed = true;
+      console.error('Could not read the stored draft', error);
+      return { status: 'none' };
+    }
     if (loaded.status === 'ok') {
       this.data = loaded.draft.data;
       this.fileName = loaded.draft.fileName;

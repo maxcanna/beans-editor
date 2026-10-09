@@ -72,6 +72,13 @@ describe('beans', () => {
     expect(isoFromLocalDay('')).toBe('');
   });
 
+  it('keeps years before 100 instead of reading them as 19xx', () => {
+    for (const day of ['0050-06-01', '0099-12-31', '1999-01-01']) {
+      expect(localDay(isoFromLocalDay(day))).toBe(day);
+      expect(localDay(isoFromLocalNoon(day))).toBe(day);
+    }
+  });
+
   it('puts a link’s dates at local noon, so another timezone keeps the same day', () => {
     const iso = isoFromLocalNoon('2025-04-30');
     expect(localDay(iso)).toBe('2025-04-30');
@@ -391,5 +398,20 @@ describe('EditorSession', () => {
     session.update((d) => setArchived(d, 'BEANS', 'b2', false));
     await session.flush();
     expect(session.storageFailed).toBe(true);
+  });
+
+  it('starts without a draft when storage can not be read, and says so', async () => {
+    const { EditorSession } = await import('./session.svelte');
+    const broken: DraftStore = {
+      get: async () => {
+        throw new DOMException('denied', 'SecurityError');
+      },
+      set: async () => undefined,
+      del: async () => undefined,
+    };
+    const session = new EditorSession(broken);
+    expect(await session.restore()).toEqual({ status: 'none' });
+    expect(session.storageFailed).toBe(true);
+    expect(session.data).toBeNull();
   });
 });

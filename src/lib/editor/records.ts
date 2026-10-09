@@ -1,4 +1,4 @@
-import type { BackupData, BackupRecord, CollectionKey } from '../formats/backup/backup';
+import type { BackupData, BackupRecord, CollectionKey } from '../formats/backup/schema';
 
 /**
  * Immutable edits on a backup. Each function returns a new BackupData and
