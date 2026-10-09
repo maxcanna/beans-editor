@@ -35,7 +35,6 @@ export default defineConfig({
   },
   build: {
     target: 'es2023',
-    sourcemap: true,
   },
   test: {
     include: ['src/**/*.test.ts'],

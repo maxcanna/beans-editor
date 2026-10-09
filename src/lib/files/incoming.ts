@@ -37,7 +37,8 @@ export async function consumeShare(location: Location, history: History): Promis
   }
 
   if (hasFile) {
-    const shared = await takeSharedFile();
+    // Blocked storage can't hold a handed-over file; it ends as "nothing to open" like any empty share.
+    const shared = await takeSharedFile().catch(() => undefined);
     if (shared) return { type: 'file', file: { name: shared.name, bytes: new Uint8Array(shared.bytes) } };
   }
   if (link !== null) {

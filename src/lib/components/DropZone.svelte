@@ -27,9 +27,14 @@
     e.preventDefault();
     dragging = true;
   }}
-  ondragleave={() => (dragging = false)}
+  ondragleave={(e) => {
+    // Moving over a child element also fires dragleave; only leaving the zone counts.
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) dragging = false;
+  }}
   ondrop={(e) => {
     e.preventDefault();
+    // The page opens files dropped elsewhere; this one is handled here.
+    e.stopPropagation();
     dragging = false;
     pick(e.dataTransfer?.files);
   }}

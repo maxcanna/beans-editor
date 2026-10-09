@@ -195,3 +195,11 @@ export function findSharedUrl(...fields: (string | null | undefined)[]): URL | u
   }
   return undefined;
 }
+
+/**
+ * Whether a URL being typed could be the whole product link: a real host (`shop.example`) and a path.
+ * Product pages always have one, and a half-typed `https://exam` must not be sent to anyone.
+ */
+export function looksComplete(url: URL): boolean {
+  return /\.[a-z]{2,}$/i.test(url.hostname) && url.pathname.length > 1;
+}

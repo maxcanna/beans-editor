@@ -1,4 +1,4 @@
-import type { BackupRecord } from '../formats/backup/backup';
+import type { BackupRecord } from '../formats/backup/schema';
 import type { SharedBean } from '../beanlink/bean-link';
 import type { Blend, FreezingStorage, RoastingType, Roast } from '../formats/backup/enums';
 import { ROASTING_TYPES } from '../formats/backup/enums';
@@ -76,14 +76,22 @@ export function localDay(iso: unknown): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** A local `YYYY-MM-DD` day at the given hour. `setFullYear`, not `new Date(y, …)`, which reads years 0 to 99 as 19xx. */
+function localDate(day: string, hour: number): Date | undefined {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!m) return undefined;
+  const date = new Date(0);
+  date.setFullYear(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  date.setHours(hour, 0, 0, 0);
+  return date;
 }
 
 /** Local midnight of a `YYYY-MM-DD` day as an ISO timestamp, like the app's date pickers. */
 export function isoFromLocalDay(day: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
-  if (!m) return '';
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toISOString();
+  return localDate(day, 0)?.toISOString() ?? '';
 }
 
 /**
@@ -91,9 +99,7 @@ export function isoFromLocalDay(day: string): string {
  * may be in another timezone than this browser; noon keeps the same calendar day up to 11 hours apart.
  */
 export function isoFromLocalNoon(day: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
-  if (!m) return '';
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).toISOString();
+  return localDate(day, 12)?.toISOString() ?? '';
 }
 
 export const emptyOrigin = (): BeanOrigin => ({
@@ -276,13 +282,13 @@ function outsideRange(day: string, from?: string, to?: string): boolean {
   return !day || (!!from && day < from) || (!!to && day > to);
 }
 
-/** Beans matching a search over name, roaster, origins and notes, newest first like the app. */
 /** Whether a bean is in the freezer: it has a frozen date and no unfrozen date after it. */
 export function isFrozen(bean: BackupRecord): boolean {
   const b = bean as Record<string, unknown>;
   return localDay(b['frozenDate']) !== '' && localDay(b['unfrozenDate']) === '';
 }
 
+/** Beans matching a search over name, roaster, origins and notes, newest first like the app. */
 export function filterBeans(beans: readonly BackupRecord[], filter: BeanFilter): BackupRecord[] {
   const words = filter.query.toLowerCase().split(/\s+/).filter(Boolean);
   return beans

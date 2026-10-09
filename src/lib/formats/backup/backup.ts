@@ -1,5 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import * as v from 'valibot';
+import { COLLECTIONS, RecordSchema, type BackupData, type BackupRecord, type CollectionKey } from './schema';
 
 /**
  * Beanconqueror's backup zip, mirroring the app's own writer and reader
@@ -16,27 +17,7 @@ export const CHUNKING = [
   { key: 'BARISTAMODE_BREWS', fileName: 'Baristamode', size: 250 },
 ] as const;
 
-/** Storage keys that hold lists of records with `config.uuid`. */
-export const COLLECTIONS = [
-  'BEANS',
-  'GREEN_BEANS',
-  'BREWS',
-  'MILL',
-  'PREPARATION',
-  'WATER',
-  'ROASTING_MACHINES',
-  'GRAPH',
-  'BARISTAMODE_BREWS',
-] as const;
-export type CollectionKey = (typeof COLLECTIONS)[number];
-
-const RecordSchema = v.looseObject({
-  config: v.looseObject({ uuid: v.string(), unix_timestamp: v.number() }),
-});
-export type BackupRecord = v.InferOutput<typeof RecordSchema>;
-
-/** Everything in the backup, keyed like the app's storage. Unknown keys are kept verbatim. */
-export type BackupData = Record<string, unknown> & Partial<Record<CollectionKey, BackupRecord[]>>;
+export { COLLECTIONS, type BackupData, type BackupRecord, type CollectionKey };
 
 export class BackupError extends Error {
   override name = 'BackupError';

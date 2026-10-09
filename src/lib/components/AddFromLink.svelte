@@ -3,8 +3,8 @@
   import { Dialog } from 'bits-ui';
   import { onMount } from 'svelte';
   import { m } from '$paraglide/messages';
-  import { beanLink, findSharedUrl, nameFromUrl } from '../beanlink/bean-link';
-  import type { BackupRecord } from '../formats/backup/backup';
+  import { beanLink, findSharedUrl, looksComplete, nameFromUrl } from '../beanlink/bean-link';
+  import type { BackupRecord } from '../formats/backup/schema';
   import {
     applyBeanForm,
     beanForm,
@@ -15,6 +15,7 @@
   } from '../editor/beans';
   import { ReadError, readBean } from '../extract/read';
   import BeanFields from './editor/BeanFields.svelte';
+  import ConfirmDiscard from './editor/ConfirmDiscard.svelte';
   import { buttonClass, inputClass, labelClass, primaryButtonClass } from './editor/styles';
 
   interface Props {
@@ -44,6 +45,22 @@
   let typingTimer: ReturnType<typeof setTimeout> | undefined;
   /** The link being read, shown while it loads. */
   let readingHost = $state('');
+  /** The review form as it was filled in, to tell whether the user has edited it since. */
+  let baseline = '';
+  let confirmingDiscard = $state(false);
+  const dirty = $derived(step === 'review' && JSON.stringify(form) !== baseline);
+
+  /** Escape or a tap outside would drop edits made on the review form: ask first. */
+  function guardClose(event: Event) {
+    if (!dirty || confirmingDiscard) return;
+    event.preventDefault();
+    confirmingDiscard = true;
+  }
+  function leave() {
+    clearTimeout(typingTimer);
+    controller?.abort();
+    onclose();
+  }
 
   const mode = $derived(onadd ? 'backup' : 'share');
   const errors = $derived(validateBean(form, maxRating));
@@ -88,13 +105,18 @@
     error = null;
     readingHost = url.hostname.replace(/^www\./, '');
     step = 'reading';
-    controller = new AbortController();
+    // A newer read replaces one still running, so an old answer can't land on top of it.
+    controller?.abort();
+    const mine = (controller = new AbortController());
     try {
-      form = beanFormFromShared(await readBean(url, fetch, controller.signal));
+      const bean = await readBean(url, fetch, mine.signal);
+      if (mine.signal.aborted) return;
+      form = beanFormFromShared(bean);
+      baseline = JSON.stringify(form);
       submitted = false;
       step = 'review';
     } catch (e) {
-      if (controller.signal.aborted) return;
+      if (mine.signal.aborted) return;
       step = 'link';
       error =
         e instanceof ReadError && e.kind === 'dead'
@@ -111,6 +133,7 @@
     controller?.abort();
     const url = findSharedUrl(input);
     form = beanFormFromShared(url ? { name: nameFromUrl(url), url: url.href } : { name: '' });
+    baseline = JSON.stringify(form);
     submitted = false;
     error = null;
     step = 'review';
@@ -132,8 +155,10 @@
   function oninput() {
     clearTimeout(typingTimer);
     error = null;
-    if (!online || !findSharedUrl(input)) return;
-    typingTimer = setTimeout(() => void read(), 800);
+    const url = findSharedUrl(input);
+    // Only a link that could be complete: a pause mid-typing must not send half an address to the reader.
+    if (!online || !url || !looksComplete(url)) return;
+    typingTimer = setTimeout(() => void read(), 1000);
   }
 
   onMount(() => {
@@ -148,17 +173,16 @@
 <svelte:window onoffline={() => (online = false)} ononline={() => (online = true)} />
 <svelte:document onvisibilitychange={onVisibilityChange} />
 
-<Dialog.Root
-  open
-  onOpenChange={(open) => !open && (clearTimeout(typingTimer), controller?.abort(), onclose())}
->
+<Dialog.Root open onOpenChange={(open) => !open && leave()}>
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
     <Dialog.Content
       class="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl border border-border bg-surface shadow-xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[88dvh] sm:w-[min(40rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
       data-testid="add-from-link"
+      onEscapeKeydown={guardClose}
+      onInteractOutside={guardClose}
     >
-      <header class="flex items-center gap-3 border-b border-border px-5 py-4">
+      <div class="flex items-center gap-3 border-b border-border px-5 py-4">
         <Dialog.Title class="flex-1 text-lg font-semibold">{m.link_title()}</Dialog.Title>
         <Dialog.Close
           class="rounded-full p-1.5 text-muted hover:bg-border/50 focus-visible:outline-2 focus-visible:outline-accent"
@@ -166,7 +190,7 @@
         >
           <X class="size-5" aria-hidden="true" />
         </Dialog.Close>
-      </header>
+      </div>
 
       {#if step !== 'review'}
         <form
@@ -314,6 +338,9 @@
             </button>
           {/if}
         </footer>
+      {/if}
+      {#if confirmingDiscard}
+        <ConfirmDiscard ondiscard={leave} oncancel={() => (confirmingDiscard = false)} />
       {/if}
     </Dialog.Content>
   </Dialog.Portal>

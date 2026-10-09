@@ -3,6 +3,7 @@
   import { Dialog } from 'bits-ui';
   import type { Snippet } from 'svelte';
   import { m } from '$paraglide/messages';
+  import ConfirmDiscard from './ConfirmDiscard.svelte';
 
   interface Props {
     title: string;
@@ -11,11 +12,33 @@
     formId: string;
     onsubmit: () => void;
     onclose: () => void;
+    /** The form has edits, so Escape or a tap outside asks before closing. */
+    dirty?: boolean;
+    /** Another dialog (delete) is open on top and handles Escape itself. */
+    busy?: boolean;
     children: Snippet;
     footer: Snippet;
   }
 
-  let { title, testid, formId, onsubmit, onclose, children, footer }: Props = $props();
+  let {
+    title,
+    testid,
+    formId,
+    onsubmit,
+    onclose,
+    dirty = false,
+    busy = false,
+    children,
+    footer,
+  }: Props = $props();
+
+  let confirmingDiscard = $state(false);
+
+  function guardClose(event: Event) {
+    if (!dirty || busy || confirmingDiscard) return;
+    event.preventDefault();
+    confirmingDiscard = true;
+  }
 </script>
 
 <!-- A bottom sheet on phones, a centred dialog on larger screens; mounted only while open. -->
@@ -25,8 +48,10 @@
     <Dialog.Content
       class="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl border border-border bg-surface shadow-xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[88dvh] sm:w-[min(40rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
       data-testid={testid}
+      onEscapeKeydown={guardClose}
+      onInteractOutside={guardClose}
     >
-      <header class="flex items-center gap-3 border-b border-border px-5 py-4">
+      <div class="flex items-center gap-3 border-b border-border px-5 py-4">
         <Dialog.Title class="flex-1 text-lg font-semibold">{title}</Dialog.Title>
         <Dialog.Close
           class="rounded-full p-1.5 text-muted hover:bg-border/50 focus-visible:outline-2 focus-visible:outline-accent"
@@ -34,7 +59,7 @@
         >
           <X class="size-5" aria-hidden="true" />
         </Dialog.Close>
-      </header>
+      </div>
       <form
         id={formId}
         class="flex-1 space-y-6 overflow-y-auto px-5 py-5"
@@ -61,6 +86,9 @@
           {m.bean_save()}
         </button>
       </footer>
+      {#if confirmingDiscard}
+        <ConfirmDiscard ondiscard={onclose} oncancel={() => (confirmingDiscard = false)} />
+      {/if}
     </Dialog.Content>
   </Dialog.Portal>
 </Dialog.Root>
