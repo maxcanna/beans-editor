@@ -205,6 +205,8 @@ test('puts the roast date in the link, but not what the app would drop', async (
 });
 
 test('adds dates and freezing details to a backup bean', async ({ page }) => {
+  // Playwright can't drive the native save picker; this test exercises the anchor download.
+  await page.addInitScript(() => delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker);
   await mockJina(page, PAGE_WITH_DATES);
   const dialog = await openFromEditor(page);
   await dialog.getByLabel('Product page URL').fill(PRODUCT);
