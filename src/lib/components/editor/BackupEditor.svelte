@@ -136,9 +136,9 @@
         <span class="max-sm:sr-only">{m.beans_add()}</span>
       </button>
     </div>
-    <header class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+    <header class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
       <FileArchive class="size-5 shrink-0 text-muted max-sm:hidden" aria-hidden="true" />
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0">
         <h2 class="truncate text-sm font-medium text-muted">{session.fileName}</h2>
         {#if session.storageFailed || session.dirty}
           <p class="text-xs" aria-live="polite" data-testid="save-state">
