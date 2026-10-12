@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Download, FileArchive, X } from '@lucide/svelte';
+  import { Download, FileArchive, Link, Plus, X } from '@lucide/svelte';
   import { Tabs } from 'bits-ui';
   import { m } from '$paraglide/messages';
   import { writeBackup } from '../../formats/backup/backup';
@@ -113,43 +113,63 @@
   }
 
   const action =
-    'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+    'inline-flex items-center gap-2 rounded-full px-4 py-2 max-sm:p-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 </script>
 
 <div class="flex flex-col gap-6" data-testid="backup-editor">
-  <header class="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-    <FileArchive class="size-8 shrink-0 text-accent" aria-hidden="true" />
-    <div class="min-w-0 flex-1 basis-56">
-      <h2 class="truncate font-semibold">{session.fileName}</h2>
-      {#if session.storageFailed || session.dirty}
-        <p class="mt-1 text-xs" aria-live="polite" data-testid="save-state">
-          {#if session.storageFailed}
-            <span role="alert" class="font-medium text-danger">{m.editor_storage_failed()}</span>
-          {:else}
-            <span class="font-medium text-accent">{m.editor_unsaved()}</span>
-          {/if}
-        </p>
-      {/if}
-    </div>
-    <div class="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">
+  <div class="flex items-center gap-3">
+    <div class="flex shrink-0 items-center gap-2">
+      <button
+        type="button"
+        class="{action} border border-border hover:bg-border/40"
+        onclick={() => (addingFromLink = true)}
+      >
+        <Link class="size-4" aria-hidden="true" />
+        <span class="max-sm:sr-only">{m.beans_add_link()}</span>
+      </button>
       <button
         type="button"
         class="{action} bg-accent text-accent-fg hover:bg-accent/90"
-        onclick={downloadBackup}
+        onclick={() => (editing = { key: 'BEANS', record: newBean(), isNew: true })}
       >
-        <Download class="size-4" aria-hidden="true" />
-        {m.editor_download()}
-      </button>
-      <button
-        type="button"
-        class="rounded-full p-2 text-muted hover:bg-border/50 focus-visible:outline-2 focus-visible:outline-accent"
-        aria-label={m.editor_close()}
-        onclick={onclose}
-      >
-        <X class="size-5" aria-hidden="true" />
+        <Plus class="size-4" aria-hidden="true" />
+        <span class="max-sm:sr-only">{m.beans_add()}</span>
       </button>
     </div>
-  </header>
+    <header class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
+      <FileArchive class="size-5 shrink-0 text-muted max-sm:hidden" aria-hidden="true" />
+      <div class="min-w-0">
+        <h2 class="truncate text-sm font-medium text-muted">{session.fileName}</h2>
+        {#if session.storageFailed || session.dirty}
+          <p class="text-xs" aria-live="polite" data-testid="save-state">
+            {#if session.storageFailed}
+              <span role="alert" class="font-medium text-danger">{m.editor_storage_failed()}</span>
+            {:else}
+              <span class="font-medium text-accent">{m.editor_unsaved()}</span>
+            {/if}
+          </p>
+        {/if}
+      </div>
+      <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+        <button
+          type="button"
+          class="{action} border border-border hover:bg-border/40"
+          onclick={downloadBackup}
+        >
+          <Download class="size-4" aria-hidden="true" />
+          <span class="max-sm:sr-only">{m.editor_download()}</span>
+        </button>
+        <button
+          type="button"
+          class="rounded-full p-2 text-muted hover:bg-border/50 focus-visible:outline-2 focus-visible:outline-accent"
+          aria-label={m.editor_close()}
+          onclick={onclose}
+        >
+          <X class="size-5" aria-hidden="true" />
+        </button>
+      </div>
+    </header>
+  </div>
 
   <Tabs.Root bind:value={tab} class="flex flex-col gap-6">
     <Tabs.List
@@ -179,8 +199,6 @@
           filters={filters.beans}
           brewCount={(uuid) => brewsUsing(data, 'BEANS', uuid)}
           onopen={(uuid) => openRecord('BEANS', uuid)}
-          onadd={() => (editing = { key: 'BEANS', record: newBean(), isNew: true })}
-          onaddlink={() => (addingFromLink = true)}
         />
       {/if}
     </Tabs.Content>
