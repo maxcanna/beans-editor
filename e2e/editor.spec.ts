@@ -48,8 +48,7 @@ test('edits a bean and downloads a backup that keeps everything else', async ({ 
   await expect(page.getByTestId('save-state')).toHaveText('Unsaved changes');
 
   const json = await downloadBackup(page);
-  // A plain download can't tell us the user finished saving, so the flag stays.
-  await expect(page.getByTestId('save-state')).toHaveText('Unsaved changes');
+  await expect(page.getByTestId('save-state')).toBeHidden();
   const expected = backupData();
   expect(json).toEqual({
     ...expected,
@@ -785,7 +784,7 @@ test('keeps the add buttons beside the file bar, and search at the same height, 
   await expect(page.getByTestId('bean-dialog')).toBeVisible();
 });
 
-test('a download keeps the unsaved flag unless the save picker confirms the write', async ({ page }) => {
+test('a dismissed save picker keeps the unsaved flag', async ({ page }) => {
   await openBackup(page);
   await renameUnusedLot(page, 'Renamed Lot');
   const closeAsk = async () => {
