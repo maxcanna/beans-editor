@@ -18,9 +18,9 @@ type SaveFilePicker = (options: {
 }>;
 
 /**
- * Hands the bytes to the user. Resolves true only once the file is known to be written: the
- * File System Access save picker tells us, whereas an anchor download gives no signal (the
- * user can dismiss the OS save window and the page never hears), so there it resolves false.
+ * Hands the bytes to the user. Resolves false only when the user dismissed the File System
+ * Access save picker, the one case the page can hear about. Browsers without the picker get a
+ * plain anchor download, which gives no signal either way, so it counts as saved.
  */
 export async function download(bytes: Uint8Array, fileName: string, type = ZIP_TYPE): Promise<boolean> {
   const blob = new Blob([bytes as BlobPart], { type });
@@ -47,5 +47,5 @@ export async function download(bytes: Uint8Array, fileName: string, type = ZIP_T
   a.download = fileName;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  return false;
+  return true;
 }
