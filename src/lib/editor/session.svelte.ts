@@ -10,7 +10,7 @@ import { clearDraft, idbDraftStore, loadDraft, saveDraft, type DraftStore, type 
 export class EditorSession {
   data = $state.raw<BackupData | null>(null);
   fileName = $state('');
-  /** Edited since the file was opened or last downloaded. */
+  /** Edited since the file was opened or last saved. */
   dirty = $state(false);
   /** The last write to IndexedDB failed (storage full or blocked), so a reload would lose work. */
   storageFailed = $state(false);
@@ -58,7 +58,7 @@ export class EditorSession {
     void this.flush();
   }
 
-  /** Call after the backup was downloaded. */
+  /** Call once the backup is known to be written to disk. */
   markSaved() {
     this.dirty = false;
     void this.flush();
