@@ -107,9 +107,9 @@
 
   const bytes = () => writeBackup(data);
 
-  function downloadBackup() {
-    download(bytes(), outputName(session.fileName));
-    session.markSaved();
+  async function downloadBackup() {
+    // A dismissed save picker must not clear the unsaved flag.
+    if (await download(bytes(), outputName(session.fileName))) session.markSaved();
   }
 
   const action =
