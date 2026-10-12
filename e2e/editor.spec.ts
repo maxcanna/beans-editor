@@ -758,3 +758,26 @@ test('opens a backup dropped anywhere on the page instead of leaving the app', a
   await expect(page.getByRole('button', { name: /Dropped Bean/ })).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
 });
+
+test('keeps the add buttons beside the file bar, and search at the same height, in every section', async ({
+  page,
+}) => {
+  await openBackup(page, backupData());
+  const tops: number[] = [];
+  for (const [tab, search] of [
+    [/^Beans/, 'Search beans'],
+    [/^Brews/, 'Search brews'],
+    [/^Grinders/, 'Search grinders'],
+    [/^Methods/, 'Search methods'],
+  ] as const) {
+    await page.getByRole('tab', { name: tab }).click();
+    await expect(page.getByRole('button', { name: 'Add bean from URL' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add bean', exact: true })).toBeVisible();
+    tops.push((await page.getByPlaceholder(search).boundingBox())!.y);
+  }
+  expect(new Set(tops.map(Math.round)).size).toBe(1);
+
+  await page.getByRole('tab', { name: /^Brews/ }).click();
+  await page.getByRole('button', { name: 'Add bean', exact: true }).click();
+  await expect(page.getByTestId('bean-dialog')).toBeVisible();
+});

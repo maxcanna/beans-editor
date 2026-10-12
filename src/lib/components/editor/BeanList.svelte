@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Link, Plus, Search, SlidersHorizontal } from '@lucide/svelte';
+  import { Search, SlidersHorizontal } from '@lucide/svelte';
   import { m } from '$paraglide/messages';
   import type { BackupRecord } from '../../formats/backup/schema';
   import { filterBeans, isFrozen, localDay, sortBeans, type BeanSortKey } from '../../editor/beans';
@@ -22,12 +22,9 @@
     filters: BeanFilters;
     brewCount: (uuid: string) => number;
     onopen: (uuid: string) => void;
-    onadd: () => void;
-    /** Opens "Add a bean from a URL", which adds the bean to this backup. */
-    onaddlink: () => void;
   }
 
-  let { beans, filters, brewCount, onopen, onadd, onaddlink }: Props = $props();
+  let { beans, filters, brewCount, onopen }: Props = $props();
 
   let sort = $state<Sort<BeanSortKey> | null>(null);
   const shown = $derived(sortBeans(filterBeans(beans, filters), sort));
@@ -81,28 +78,7 @@
     'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-accent';
 </script>
 
-<section aria-labelledby="beans-heading" class="flex flex-col gap-4">
-  <div class="flex flex-wrap items-center gap-3">
-    <h2 id="beans-heading" class="text-lg font-semibold">{m.beans_title()}</h2>
-    <span class="flex-1"></span>
-    <button
-      type="button"
-      class="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      onclick={onaddlink}
-    >
-      <Link class="size-4" aria-hidden="true" />
-      {m.beans_add_link()}
-    </button>
-    <button
-      type="button"
-      class="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:bg-accent/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      onclick={onadd}
-    >
-      <Plus class="size-4" aria-hidden="true" />
-      {m.beans_add()}
-    </button>
-  </div>
-
+<section aria-label={m.beans_title()} class="flex flex-col gap-4">
   <div class="flex flex-wrap items-center gap-3">
     <label class="relative min-w-48 flex-1">
       <span class="sr-only">{m.beans_search()}</span>
