@@ -77,7 +77,7 @@
     if (!invalidDraft) return;
     const { download } = await loadOutput();
     const json = new TextEncoder().encode(JSON.stringify(invalidDraft.raw));
-    download(json, 'beans-editor-unsaved-work.json', 'application/json');
+    void download(json, 'beans-editor-unsaved-work.json', 'application/json');
   }
 
   async function discardInvalidDraft() {

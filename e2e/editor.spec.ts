@@ -30,6 +30,8 @@ async function renameUnusedLot(page: Page, name: string) {
 }
 
 test.beforeEach(async ({ page }) => {
+  // Playwright can't drive the native save picker; these tests exercise the anchor download.
+  await page.addInitScript(() => delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker);
   await page.goto('/');
 });
 
@@ -780,4 +782,33 @@ test('keeps the add buttons beside the file bar, and search at the same height, 
   await page.getByRole('tab', { name: /^Brews/ }).click();
   await page.getByRole('button', { name: 'Add bean', exact: true }).click();
   await expect(page.getByTestId('bean-dialog')).toBeVisible();
+});
+
+test('a dismissed save picker keeps the unsaved flag', async ({ page }) => {
+  await openBackup(page);
+  await renameUnusedLot(page, 'Renamed Lot');
+  const closeAsk = async () => {
+    await page.getByRole('button', { name: 'Close backup' }).click();
+    return page.getByRole('alertdialog');
+  };
+
+  // Save window dismissed: still unsaved.
+  await page.evaluate(() => {
+    (window as unknown as Record<string, unknown>).showSaveFilePicker = () =>
+      Promise.reject(new DOMException('dismissed', 'AbortError'));
+  });
+  await page.getByRole('button', { name: 'Download backup' }).click();
+  const alert = await closeAsk();
+  await expect(alert).toContainText('Close without downloading?');
+  await alert.getByRole('button', { name: 'Keep editing' }).click();
+
+  // Save confirmed: the flag clears and closing needs no question.
+  await page.evaluate(() => {
+    (window as unknown as Record<string, unknown>).showSaveFilePicker = () =>
+      Promise.resolve({ createWritable: async () => ({ write: async () => {}, close: async () => {} }) });
+  });
+  await page.getByRole('button', { name: 'Download backup' }).click();
+  await expect(page.getByRole('button', { name: 'Close backup' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close backup' }).click();
+  await expect(page.getByTestId('backup-editor')).toHaveCount(0);
 });
